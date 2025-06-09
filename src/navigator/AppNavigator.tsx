@@ -6,6 +6,7 @@ import PersonalDataScreen from '../screens/pesonalData/PersonalDataScreen';
 import CreateEventScreen from '../screens/createEvent/CreateEventScreen';
 import QrCodeScreen from '../screens/qrCode/QrCodeScreen';
 import ContactDetailsForm from '../screens/contactDetailsForm/ContactDetailsForm';
+import ScanQrScreen from '../screens/scanQr/ScanQrScreen';
 
 
 export type RootStackParamList = {
@@ -14,18 +15,26 @@ export type RootStackParamList = {
   CreateEvent:undefined;
   QRCode:undefined;
   ContactDetailsForm:undefined;
+  ScanQr:undefined
  
 
 };
 const Stack = createNativeStackNavigator<RootStackParamList>();
 const AppNavigator = () => {
   return (
-  <Stack.Navigator initialRouteName="ContactDetailsForm">
+  <Stack.Navigator initialRouteName="PersonalData">
         <Stack.Screen
       
 
           name="PersonalDetailsForm"
           component={PersonalDetailsFormScreen}
+          options={{headerShown: false}}
+        />
+  <Stack.Screen
+      
+
+          name="ScanQr"
+          component={ScanQrScreen}
           options={{headerShown: false}}
         />
 

@@ -186,6 +186,15 @@ const PersonalDataScreen: React.FC = () => {
             >
               <Text style={styles.secondaryButtonText}>📅 View My Events</Text>
             </TouchableOpacity>
+
+
+                <TouchableOpacity
+              style={styles.secondaryButton}
+              activeOpacity={0.8}
+              onPress={()=>navigation.navigate('ScanQr')}
+            >
+              <Text style={styles.secondaryButtonText}> Scanner</Text>
+            </TouchableOpacity>
           </View>
         </ScrollView>
       </Animated.View>

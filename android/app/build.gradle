@@ -76,7 +76,14 @@ android {
     ndkVersion rootProject.ext.ndkVersion
     buildToolsVersion rootProject.ext.buildToolsVersion
     compileSdk rootProject.ext.compileSdkVersion
-
+  splits {
+        abi {
+            reset()
+            enable true
+            universalApk false
+            include "armeabi-v7a", "arm64-v8a", "x86", "x86_64"
+        }
+    }
     namespace "com.kontaxapplication"
     defaultConfig {
         applicationId "com.kontaxapplication"
@@ -84,6 +91,7 @@ android {
         targetSdkVersion rootProject.ext.targetSdkVersion
         versionCode 1
         versionName "1.0"
+        newArchEnabled=true
     }
     signingConfigs {
         debug {
