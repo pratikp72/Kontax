@@ -1,4 +1,4 @@
-import React, { useRef, useEffect } from 'react';
+import React, {useRef, useEffect} from 'react';
 import IconT from 'react-native-vector-icons/FontAwesome';
 import {
   View,
@@ -10,37 +10,20 @@ import {
   Dimensions,
   Alert,
   StatusBar,
+  TextInput,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import {SafeAreaView} from 'react-native-safe-area-context';
 import Icon from 'react-native-vector-icons/MaterialIcons';
-import { useNavigation } from '@react-navigation/native';
+import {useNavigation} from '@react-navigation/native';
+import {usePersonalStore} from '../../store/userPersonalStore';
 
-const { width, height } = Dimensions.get('window');
-
-interface PersonalDetails {
-  firstName: string;
-  lastName: string;
-  email: string;
-  phone: string;
-organization:string;
-designation:string;
-linkedln:string
-}
-
-// Sample data - in real app, this would come from props, state management, or API
-const sampleData: PersonalDetails = {
-  firstName: 'John',
-  lastName: 'Doe',
-  email: 'john.doe@example.com',
-  phone: '+1 (555) 123-4567',
- designation:'to be developer',
- organization:'ttt',
- linkedln:'www.link.com'
-};
+const {width, height} = Dimensions.get('window');
 
 const PersonalDataScreen: React.FC = () => {
-
-    const navigation=useNavigation()
+  const [isEditing, setIsEditing] = React.useState(false);
+  const {formData, setFormData} = usePersonalStore();
+  const [editedData, setEditedData] = React.useState(formData);
+  const navigation = useNavigation();
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const slideAnim = useRef(new Animated.Value(30)).current;
   const scaleAnim = useRef(new Animated.Value(0.95)).current;
@@ -67,28 +50,39 @@ const PersonalDataScreen: React.FC = () => {
   }, []);
 
   const handleCreateEvent = () => {
-  navigation.navigate('CreateEvent')
+    navigation.navigate('CreateEvent');
   };
 
   const handleEditProfile = () => {
-    Alert.alert(
-      'Edit Profile',
-      'Navigate to edit profile screen?',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        { text: 'Yes', onPress: () => console.log('Navigate to edit profile') },
-      ]
-    );
+    if (isEditing) {
+      setFormData(editedData); // save to store
+      Alert.alert('Success', 'Profile updated!');
+    }
+    setIsEditing(!isEditing); // toggle mode
   };
 
-  const renderDetailItem = (icon: React.ReactNode, label: string, value: string, isLast = false) => (
+  const renderDetailItem = (
+    icon: React.ReactNode,
+    label: keyof typeof editedData,
+    isLast = false,
+  ) => (
     <View style={[styles.detailItem, !isLast && styles.detailItemBorder]}>
       <View style={styles.detailIcon}>
         <Text style={styles.iconText}>{icon}</Text>
       </View>
       <View style={styles.detailContent}>
         <Text style={styles.detailLabel}>{label}</Text>
-        <Text style={styles.detailValue}>{value}</Text>
+        {isEditing ? (
+          <TextInput
+            style={styles.input}
+            value={editedData[label]}
+            onChangeText={text =>
+              setEditedData(prev => ({...prev, [label]: text}))
+            }
+          />
+        ) : (
+          <Text style={styles.detailValue}>{formData[label]}</Text>
+        )}
       </View>
     </View>
   );
@@ -100,7 +94,7 @@ const PersonalDataScreen: React.FC = () => {
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="light-content" backgroundColor="#3498DB" />
-      
+
       {/* Header */}
       <View style={styles.header}>
         <Animated.View
@@ -108,26 +102,32 @@ const PersonalDataScreen: React.FC = () => {
             styles.headerContent,
             {
               opacity: fadeAnim,
-              transform: [{ translateY: slideAnim }],
+              transform: [{translateY: slideAnim}],
             },
-          ]}
-        >
+          ]}>
           <View style={styles.avatarContainer}>
             <Text style={styles.avatarText}>
-              {getInitials(sampleData.firstName, sampleData.lastName)}
+              {getInitials(formData.firstName, formData.lastName)}
             </Text>
           </View>
           <Text style={styles.headerName}>
-            {`${sampleData.firstName} ${sampleData.lastName}`}
+            {`${formData.firstName} ${formData.lastName}`}
           </Text>
-          <Text style={styles.headerEmail}>{sampleData.email}</Text>
-          
+          <Text style={styles.headerEmail}>{formData.email}</Text>
+
           <TouchableOpacity
             style={styles.editButton}
-            onPress={handleEditProfile}
-            activeOpacity={0.8}
-          >
-            <View style={styles.editButtonT}><Icon name="edit" size={24} color="white" /> <Text style={styles.editButtonText}>Edit Profile</Text></View>
+            onPress={handleEditProfile}>
+            <View style={styles.editButtonT}>
+              <Icon
+                name={isEditing ? 'check' : 'edit'}
+                size={24}
+                color="white"
+              />
+              <Text style={styles.editButtonText}>
+                {isEditing ? 'Save Changes' : 'Edit Profile'}
+              </Text>
+            </View>
           </TouchableOpacity>
         </Animated.View>
       </View>
@@ -138,43 +138,69 @@ const PersonalDataScreen: React.FC = () => {
           styles.detailsCard,
           {
             opacity: fadeAnim,
-            transform: [
-              { translateY: slideAnim },
-              { scale: scaleAnim },
-            ],
+            transform: [{translateY: slideAnim}, {scale: scaleAnim}],
           },
-        ]}
-      >
+        ]}>
         <ScrollView
           showsVerticalScrollIndicator={false}
-          contentContainerStyle={styles.scrollContent}
-        >
+          contentContainerStyle={styles.scrollContent}>
           <Text style={styles.sectionTitle}>Personal Information</Text>
-          
+
           <View style={styles.detailsContainer}>
-            {renderDetailItem(<Icon name="person" size={24} color="#4292c6" />, 'First Name', sampleData.firstName)}
-            {renderDetailItem(<Icon name="person" size={24} color="#4292c6" />, 'Last Name', sampleData.lastName)}
-            {renderDetailItem(<Icon name="email" size={24} color="#4292c6" />, 'Email', sampleData.email)}
-            {renderDetailItem(<Icon name="phone" size={24} color="#4292c6" />, 'Phone', sampleData.phone)}
-            {renderDetailItem(<Icon name="home" size={24} color="#4292c6" />, 'Organization', sampleData.organization)}
-            {renderDetailItem(<Icon name="work" size={24} color="#4292c6" />, 'Designation', sampleData.designation)}
-            {renderDetailItem(<IconT name="linkedin-square" size={24} color="#0077B5" />, 'Linkedln', sampleData.linkedln)}
-   
+            {renderDetailItem(
+              <Icon name="person" size={24} color="#4292c6" />,
+              'firstName',
+            )}
+            {renderDetailItem(
+              <Icon name="person" size={24} color="#4292c6" />,
+              'lastName',
+            )}
+            {renderDetailItem(
+              <Icon name="email" size={24} color="#4292c6" />,
+              'email',
+            )}
+            {renderDetailItem(
+              <Icon name="phone" size={24} color="#4292c6" />,
+              'phone',
+            )}
+            {renderDetailItem(
+              <Icon name="home" size={24} color="#4292c6" />,
+              'organization',
+            )}
+            {renderDetailItem(
+              <Icon name="work" size={24} color="#4292c6" />,
+              'designation',
+            )}
+            {renderDetailItem(
+              <IconT name="linkedin-square" size={24} color="#0077B5" />,
+              'linkedln',
+              true,
+            )}
+
+            {/* {renderDetailItem(<Icon name="person" size={24} color="#4292c6" />, 'First Name', formData.firstName)}
+            {renderDetailItem(<Icon name="person" size={24} color="#4292c6" />, 'Last Name', formData.lastName)}
+            {renderDetailItem(<Icon name="email" size={24} color="#4292c6" />, 'Email', formData.email)}
+            {renderDetailItem(<Icon name="phone" size={24} color="#4292c6" />, 'Phone', formData.phone)}
+            {renderDetailItem(<Icon name="home" size={24} color="#4292c6" />, 'Organization', formData.organization)}
+            {renderDetailItem(<Icon name="work" size={24} color="#4292c6" />, 'Designation', formData.designation)}
+            {renderDetailItem(<IconT name="linkedin-square" size={24} color="#0077B5" />, 'Linkedln', formData.linkedln)}
+    */}
           </View>
 
           {/* Action Buttons */}
           <View style={styles.actionButtonsContainer}>
-            <Animated.View style={{ transform: [{ scale: buttonScale }] }}>
+            <Animated.View style={{transform: [{scale: buttonScale}]}}>
               <TouchableOpacity
                 style={styles.createEventButton}
                 onPress={handleCreateEvent}
-                activeOpacity={0.9}
-              >
+                activeOpacity={0.9}>
                 <View style={styles.buttonContent}>
                   <Text style={styles.buttonIcon}>🎉</Text>
                   <View>
                     <Text style={styles.buttonTitle}>Create Event</Text>
-                    <Text style={styles.buttonSubtitle}>Plan something amazing</Text>
+                    <Text style={styles.buttonSubtitle}>
+                      Plan something amazing
+                    </Text>
                   </View>
                 </View>
               </TouchableOpacity>
@@ -182,17 +208,14 @@ const PersonalDataScreen: React.FC = () => {
 
             <TouchableOpacity
               style={styles.secondaryButton}
-              activeOpacity={0.8}
-            >
+              activeOpacity={0.8}>
               <Text style={styles.secondaryButtonText}>📅 View My Events</Text>
             </TouchableOpacity>
 
-
-                <TouchableOpacity
+            <TouchableOpacity
               style={styles.secondaryButton}
               activeOpacity={0.8}
-              onPress={()=>navigation.navigate('ScanQr')}
-            >
+              onPress={() => navigation.navigate('ScanQr')}>
               <Text style={styles.secondaryButtonText}> Scanner</Text>
             </TouchableOpacity>
           </View>
@@ -217,6 +240,13 @@ const styles = StyleSheet.create({
   headerContent: {
     alignItems: 'center',
     paddingHorizontal: 20,
+  },
+  input: {
+    borderBottomWidth: 1,
+    borderBottomColor: '#ccc',
+    paddingVertical: 4,
+    fontSize: 16,
+    color: '#2C3E50',
   },
   avatarContainer: {
     width: 80,
@@ -263,21 +293,21 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     fontSize: 14,
     fontWeight: '600',
-   flexDirection:'row',
-   justifyContent:'center',
-   alignItems:'center',
-   gap:4,
-    alignSelf:'center'
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    gap: 4,
+    alignSelf: 'center',
   },
-   editButtonText: {
+  editButtonText: {
     color: '#FFFFFF',
     fontSize: 14,
     fontWeight: '600',
-   flexDirection:'row',
-   justifyContent:'center',
-   alignItems:'center',
-   gap:4,
-    alignSelf:'center'
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    gap: 4,
+    alignSelf: 'center',
   },
   detailsCard: {
     flex: 1,

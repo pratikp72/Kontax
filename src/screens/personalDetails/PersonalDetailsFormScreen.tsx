@@ -1,5 +1,7 @@
-import { useNavigation } from '@react-navigation/native';
-import React, { useState, useRef } from 'react';
+import {useNavigation} from '@react-navigation/native';
+import {usePersonalStore} from '../../store/userPersonalStore';
+
+import React, {useState, useRef} from 'react';
 import {
   View,
   Text,
@@ -13,18 +15,18 @@ import {
   Platform,
   Alert,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import {SafeAreaView} from 'react-native-safe-area-context';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import IconT from 'react-native-vector-icons/FontAwesome';
 
-const { width } = Dimensions.get('window');
+const {width} = Dimensions.get('window');
 
 interface FormData {
   firstName: string;
   lastName: string;
   email: string;
   phone: string;
- 
+
   organization: string;
   designation: string;
   linkedln: string;
@@ -35,21 +37,14 @@ interface FormErrors {
   lastName?: string;
   email?: string;
   phone?: string;
-   organization:string,
-  designation:string,
-  linkedln:string}
+  organization: string;
+  designation: string;
+  linkedln: string;
+}
 
 const PersonalDetailsFormScreen: React.FC = () => {
-  const [formData, setFormData] = useState<FormData>({
-    firstName: '',
-    lastName: '',
-    email: '',
-    phone: '',
-  organization:'',
-  designation:'',
-  linkedln:''
-  });
-const navigation=useNavigation()
+  const {formData, setFormData} = usePersonalStore();
+  const navigation = useNavigation();
   const [errors, setErrors] = useState<FormErrors>({});
   const [focusedField, setFocusedField] = useState<string>('');
   const fadeAnim = useRef(new Animated.Value(0)).current;
@@ -115,16 +110,14 @@ const navigation=useNavigation()
       newErrors.linkedln = 'linkedln url is required';
     }
 
-  
-
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
   const handleInputChange = (field: keyof FormData, value: string) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
+    setFormData({[field]: value});
     if (errors[field]) {
-      setErrors(prev => ({ ...prev, [field]: undefined }));
+      setErrors(prev => ({...prev, [field]: undefined}));
     }
   };
 
@@ -133,44 +126,45 @@ const navigation=useNavigation()
       Alert.alert(
         'Success!',
         'Personal details have been saved successfully.',
-        [{ text: 'OK' }]
+        [{text: 'OK'}],
       );
       console.log('Form Data:', formData);
     } else {
       Alert.alert(
         'Validation Error',
         'Please fill in all required fields correctly.',
-        [{ text: 'OK' }]
+        [{text: 'OK'}],
       );
     }
-    
-
-    navigation.navigate('PersonalData')
+    setFormData(formData);
+    console.log(formData);
+    navigation.navigate('PersonalData');
   };
 
   const renderInput = (
     field: keyof FormData,
     placeholder: string,
     icon: React.ReactNode,
-    keyboardType: 'default' | 'email-address' | 'phone-pad' = 'default'
+    keyboardType: 'default' | 'email-address' | 'phone-pad' = 'default',
   ) => {
     const isFocused = focusedField === field;
     const hasError = !!errors[field];
 
     return (
       <View style={styles.inputContainer}>
-        <View style={[
-          styles.inputWrapper,
-          isFocused && styles.inputWrapperFocused,
-          hasError && styles.inputWrapperError,
-        ]}>
+        <View
+          style={[
+            styles.inputWrapper,
+            isFocused && styles.inputWrapperFocused,
+            hasError && styles.inputWrapperError,
+          ]}>
           <Text style={styles.inputIcon}>{icon}</Text>
           <TextInput
             style={styles.input}
             placeholder={placeholder}
             placeholderTextColor="#A0A0A0"
             value={formData[field]}
-            onChangeText={(value) => handleInputChange(field, value)}
+            onChangeText={value => handleInputChange(field, value)}
             onFocus={() => setFocusedField(field)}
             onBlur={() => setFocusedField('')}
             keyboardType={keyboardType}
@@ -189,17 +183,15 @@ const navigation=useNavigation()
     <SafeAreaView style={styles.container}>
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        style={styles.keyboardView}
-      >
+        style={styles.keyboardView}>
         <Animated.View
           style={[
             styles.content,
             {
               opacity: fadeAnim,
-              transform: [{ translateY: slideAnim }],
+              transform: [{translateY: slideAnim}],
             },
-          ]}
-        >
+          ]}>
           <View style={styles.header}>
             <Text style={styles.title}>Personal Details</Text>
             <Text style={styles.subtitle}>Please fill in your information</Text>
@@ -208,23 +200,49 @@ const navigation=useNavigation()
           <ScrollView
             style={styles.formContainer}
             showsVerticalScrollIndicator={false}
-            keyboardShouldPersistTaps="handled"
-          >
-            {renderInput('firstName', 'First Name', <Icon name="person" size={24} color="#4292c6" /> )}
-            {renderInput('lastName', 'Last Name', <Icon name="person" size={24} color="#4292c6" />)}
-            {renderInput('email', 'Email Address', <Icon name="email" size={24} color="#4292c6" />, 'email-address')}
-            {renderInput('phone', 'Phone Number', <Icon name="phone" size={24} color="#4292c6" />, 'phone-pad')}
-            {renderInput('organization', 'Organization',<Icon name="home" size={24} color="#4292c6" />   )}
-            {renderInput('designation', 'Designation', <Icon name="work" size={24} color="#4292c6" />)}
-            {renderInput('linkedln', 'Linkedln', 
-<IconT name="linkedin-square" size={24} color="#0077B5" />  )}
-        
+            keyboardShouldPersistTaps="handled">
+            {renderInput(
+              'firstName',
+              'First Name',
+              <Icon name="person" size={24} color="#4292c6" />,
+            )}
+            {renderInput(
+              'lastName',
+              'Last Name',
+              <Icon name="person" size={24} color="#4292c6" />,
+            )}
+            {renderInput(
+              'email',
+              'Email Address',
+              <Icon name="email" size={24} color="#4292c6" />,
+              'email-address',
+            )}
+            {renderInput(
+              'phone',
+              'Phone Number',
+              <Icon name="phone" size={24} color="#4292c6" />,
+              'phone-pad',
+            )}
+            {renderInput(
+              'organization',
+              'Organization',
+              <Icon name="home" size={24} color="#4292c6" />,
+            )}
+            {renderInput(
+              'designation',
+              'Designation',
+              <Icon name="work" size={24} color="#4292c6" />,
+            )}
+            {renderInput(
+              'linkedln',
+              'Linkedln',
+              <IconT name="linkedin-square" size={24} color="#0077B5" />,
+            )}
 
             <TouchableOpacity
               style={styles.submitButton}
               onPress={handleSubmit}
-              activeOpacity={0.8}
-            >
+              activeOpacity={0.8}>
               <Text style={styles.submitButtonText}>Save Details</Text>
             </TouchableOpacity>
           </ScrollView>
@@ -315,7 +333,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginTop: 20,
     marginBottom: 40,
-    
+
     shadowColor: '#3498DB',
     shadowOffset: {
       width: 0,
@@ -332,6 +350,4 @@ const styles = StyleSheet.create({
   },
 });
 
-
 export default PersonalDetailsFormScreen;
-

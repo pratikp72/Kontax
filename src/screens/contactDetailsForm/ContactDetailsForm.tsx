@@ -1,5 +1,4 @@
-
-import React, { useState } from 'react';
+import React, {useState} from 'react';
 import {
   View,
   Text,
@@ -16,108 +15,122 @@ import Icon from 'react-native-vector-icons/Feather';
 import LinearGradient from 'react-native-linear-gradient';
 import RNFS from 'react-native-fs';
 import Share from 'react-native-share';
+import useScanStore from '../../store/useScanStore';
+import {useEventStore} from '../../store/useEventStore';
 
-const { width } = Dimensions.get('window');
+const {width} = Dimensions.get('window');
 
 const ContactDetailsForm = () => {
   const [currentScreen, setCurrentScreen] = useState('form');
-  const [formData, setFormData] = useState({
-    firstName: '',
-    lastName: '',
-    organization: '',
-    designation: '',
-    phone: '',
-    email: '',
-    website: '',
-    address: '',
-    notes: '',
-    tags: '',
-  });
 
-  const eventData = {
-    eventTitle: 'Annual Tech Conference 2024',
-    eventDate: 'December 15, 2024',
-    eventLocation: 'Convention Center, Downtown',
-    intent: 'networking',
-    createdBy: 'Conference Organizer',
-    eventTag: 'tech, conference, networking',
-    eventNote: 'Annual technology conference featuring keynote speakers and networking opportunities.',
+  type FormData = {
+    firstName: string;
+    lastName: string;
+
+    name: {
+      firstName: string;
+      lastName: string;
+    };
+    organization: string;
+    designation: string;
+    phone: string;
+
+    email: string;
+    url: string;
+    linkedln: string;
+    notes?: string;
+    tags?: string;
   };
 
-  const updateField = (field, value) => {
-    setFormData(prev => ({
-      ...prev,
-      [field]: value,
-    }));
+  const {qrData: formData, clearQrData} = useScanStore() as {
+    qrData: FormData;
+    clearQrData: (value: string) => void;
   };
+  
+  const {eventData} = useEventStore();
 
+ 
   const isFormValid = () => {
     return (
-      formData.firstName.trim() ||
-      formData.lastName.trim() ||
-      formData.email.trim()
+      formData.firstName?.trim() ||
+      formData.name?.firstName?.trim() ||
+      formData.lastName?.trim() ||
+      formData.name?.lastName?.trim() ||
+      formData.email?.trim()
     );
   };
 
   const generateVCard = () => {
     const card = new vCard();
-    
-    // Basic information
-    if (formData.firstName || formData.lastName) {
-      card.addName(formData.lastName, formData.firstName);
+
+    // Determine best firstName and lastName (prioritize top-level fields first)
+    const firstName =
+      formData.firstName?.trim() || formData.name?.firstName?.trim() || '';
+    const lastName =
+      formData.lastName?.trim() || formData.name?.lastName?.trim() || '';
+
+    if (firstName || lastName) {
+      card.addName(lastName, firstName);
+      card.addFormattedName(`${firstName} ${lastName}`.trim());
     }
-    
-    if (formData.firstName || formData.lastName) {
-      card.addFormattedName(`${formData.firstName} ${formData.lastName}`.trim());
-    }
-    
+
     if (formData.organization) {
       card.addOrganization(formData.organization);
     }
-    
+
     if (formData.designation) {
       card.addJobtitle(formData.designation);
     }
-    
-    if (formData.phone) {
-      card.addPhoneNumber(formData.phone, 'WORK');
+
+    const phoneNumber =
+      formData.phone?.trim() || formData.phone?.number?.trim() || '7687686886';
+    if (phoneNumber) {
+      card.addPhoneNumber(phoneNumber, 'WORK');
     }
-    
+
     if (formData.email) {
       card.addEmail(formData.email, 'WORK');
     }
-    
-    if (formData.website) {
-      card.addURL(formData.website);
+    if (formData.url) {
+      card.addURL(formData.url);
     }
-    
-    if (formData.address) {
-      card.addAddress('', '', formData.address, '', '', '', '', 'WORK');
+    if (formData.linkedln) {
+      card.addURL(formData.linkedln);
     }
-    
+
     // Add event information as a note
-    const eventNote = `Event: ${eventData.eventTitle} | Date: ${eventData.eventDate} | Location: ${eventData.eventLocation}`;
-    const fullNote = formData.notes ? `${formData.notes}\n\n${eventNote}` : eventNote;
+    const eventNote = `Event: ${eventData.title} | Date: ${
+      eventData.date
+    } | Location: ${'udaipur'}`;
+    const fullNote = formData.notes
+      ? `${formData.notes}\n\n${eventNote}`
+      : eventNote;
     card.addNote(fullNote);
-    
+
     // Add tags as categories
     const allTags = [];
     if (formData.tags) {
-      const personalTags = formData.tags.split(',').map(tag => tag.trim()).filter(tag => tag.length > 0);
+      const personalTags = formData.tags
+        .split(',')
+        .map(tag => tag.trim())
+        .filter(tag => tag.length > 0);
       allTags.push(...personalTags);
     }
     if (eventData.eventTag) {
-      const eventTags = eventData.eventTag.split(',').map(tag => tag.trim()).filter(tag => tag.length > 0);
+      const eventTags = eventData.eventTag
+        .split(',')
+        .map(tag => tag.trim())
+        .filter(tag => tag.length > 0);
       allTags.push(...eventTags);
     }
     if (eventData.intent) {
       allTags.push(`intent:${eventData.intent}`);
     }
-    
+
     if (allTags.length > 0) {
       card.addCategories(allTags);
     }
-    
+
     return card.getFormattedString();
   };
 
@@ -125,30 +138,27 @@ const ContactDetailsForm = () => {
     if (isFormValid()) {
       setCurrentScreen('vcard');
     } else {
-      Alert.alert('Validation Error', 'Please enter at least First Name, Last Name, or Email.');
+      Alert.alert(
+        'Validation Error',
+        'Please enter at least First Name, Last Name, or Email.',
+      );
     }
   };
 
   const clearForm = () => {
-    setFormData({
-      firstName: '',
-      lastName: '',
-      organization: '',
-      designation: '',
-      phone: '',
-      email: '',
-      website: '',
-      address: '',
-      notes: '',
-      tags: '',
-    });
+    clearQrData('');
   };
 
   const shareVCard = async () => {
     try {
       const vCardString = generateVCard();
-      const fullName = `${formData.firstName} ${formData.lastName}`.trim() || 'Contact';
-      
+      const fullName =
+        `${formData.firstName || ''} ${formData.lastName || ''}`.trim() ||
+        `${formData.name?.firstName || ''} ${
+          formData.name?.lastName || ''
+        }`.trim() ||
+        'Contact';
+
       await Share.share({
         message: vCardString,
         title: `${fullName} - Contact Card`,
@@ -158,20 +168,38 @@ const ContactDetailsForm = () => {
       // Alert.alert('Error', 'Failed to share contact card');
     }
   };
+  const [yourData, setYourData] = useState({
+    note: '',
+    tags: '',
+    // add other fields as needed
+  });
 
+  const updateField = (field, value) => {
+    setYourData(prev => ({
+      ...prev,
+      [field]: value,
+    }));
+  };
   const getProfileInitials = () => {
-    const firstInitial = formData.firstName.charAt(0).toUpperCase();
-    const lastInitial = formData.lastName.charAt(0).toUpperCase();
+    const firstInitial =
+      formData.firstName?.charAt(0)?.toUpperCase() ||
+      formData.name?.firstName?.charAt(0)?.toUpperCase() ||
+      '';
+    const lastInitial =
+      formData.lastName?.charAt(0)?.toUpperCase() ||
+      formData.name?.lastName?.charAt(0)?.toUpperCase() ||
+      '';
+
     return `${firstInitial}${lastInitial}` || 'UC';
   };
 
   const getTagsPreview = () => {
     let allTags = [];
 
-    if (formData.tags) {
-      const personalTags = formData.tags
+    if (yourData.tags) {
+      const personalTags = yourData.tags
         .split(',')
-        .map(tag => tag.trim())
+        .map(tag => tag?.trim())
         .filter(tag => tag.length > 0);
       allTags = allTags.concat(personalTags);
     }
@@ -179,7 +207,7 @@ const ContactDetailsForm = () => {
     if (eventData.eventTag) {
       const eventTags = eventData.eventTag
         .split(',')
-        .map(tag => tag.trim())
+        .map(tag => tag?.trim())
         .filter(tag => tag.length > 0);
       allTags = allTags.concat(eventTags);
     }
@@ -195,14 +223,10 @@ const ContactDetailsForm = () => {
     return (
       <View style={styles.container}>
         <StatusBar barStyle="light-content" backgroundColor="#6366f1" />
-        <LinearGradient
-          colors={['#6366f1', '#8b5cf6']}
-          style={styles.header}
-        >
+        <LinearGradient colors={['#6366f1', '#8b5cf6']} style={styles.header}>
           <TouchableOpacity
             onPress={() => setCurrentScreen('form')}
-            style={styles.backButton}
-          >
+            style={styles.backButton}>
             <Icon name="arrow-left" size={24} color="#fff" />
             <Text style={styles.backButtonText}>Back to Form</Text>
           </TouchableOpacity>
@@ -214,30 +238,32 @@ const ContactDetailsForm = () => {
           <View style={styles.profileCard}>
             <LinearGradient
               colors={['#667eea', '#764ba2']}
-              style={styles.profileImageContainer}
-            >
-              <Text style={styles.profileInitials}>
-                {getProfileInitials()}
-              </Text>
+              style={styles.profileImageContainer}>
+              <Text style={styles.profileInitials}>{getProfileInitials()}</Text>
             </LinearGradient>
 
             <Text style={styles.profileName}>
-              {formData.firstName} {formData.lastName}
+              {formData?.firstName || formData.name.firstName}{' '}
+              {formData?.lastName || formData.name.lastName}
             </Text>
 
             {formData.designation && (
-              <Text style={styles.profileDesignation}>{formData.designation}</Text>
+              <Text style={styles.profileDesignation}>
+                {formData.designation}
+              </Text>
             )}
 
             {formData.organization && (
-              <Text style={styles.profileOrganization}>{formData.organization}</Text>
+              <Text style={styles.profileOrganization}>
+                {formData.organization}
+              </Text>
             )}
           </View>
 
           {/* Contact Information */}
           <View style={styles.infoSection}>
             <Text style={styles.sectionTitle}>Contact Information</Text>
-            
+
             {formData.email && (
               <View style={styles.infoRow}>
                 <Icon name="mail" size={20} color="#6366f1" />
@@ -248,32 +274,24 @@ const ContactDetailsForm = () => {
               </View>
             )}
 
-            {formData.phone && (
+            {/* {formData.phone && (
               <View style={styles.infoRow}>
                 <Icon name="phone" size={20} color="#6366f1" />
                 <View style={styles.infoContent}>
                   <Text style={styles.infoLabel}>Phone</Text>
-                  <Text style={styles.infoValue}>{formData.phone}</Text>
+                  <Text style={styles.infoValue}>{formData?.phone||"87787867656"}</Text>
                 </View>
               </View>
-            )}
+            )} */}
 
-            {formData.website && (
+            {formData.linkedln && formData.url && (
               <View style={styles.infoRow}>
                 <Icon name="globe" size={20} color="#6366f1" />
                 <View style={styles.infoContent}>
-                  <Text style={styles.infoLabel}>Website</Text>
-                  <Text style={styles.infoValue}>{formData.website}</Text>
-                </View>
-              </View>
-            )}
-
-            {formData.address && (
-              <View style={styles.infoRow}>
-                <Icon name="map-pin" size={20} color="#6366f1" />
-                <View style={styles.infoContent}>
-                  <Text style={styles.infoLabel}>Address</Text>
-                  <Text style={styles.infoValue}>{formData.address}</Text>
+                  <Text style={styles.infoLabel}>linkedln</Text>
+                  <Text style={styles.infoValue}>
+                    {formData.linkedln || formData.url}
+                  </Text>
                 </View>
               </View>
             )}
@@ -282,12 +300,12 @@ const ContactDetailsForm = () => {
           {/* Event Information */}
           <View style={styles.infoSection}>
             <Text style={styles.sectionTitle}>Event Details</Text>
-            
+
             <View style={styles.infoRow}>
               <Icon name="calendar" size={20} color="#10b981" />
               <View style={styles.infoContent}>
                 <Text style={styles.infoLabel}>Event</Text>
-                <Text style={styles.infoValue}>{eventData.eventTitle}</Text>
+                <Text style={styles.infoValue}>{eventData.title || 'top'}</Text>
               </View>
             </View>
 
@@ -295,7 +313,9 @@ const ContactDetailsForm = () => {
               <Icon name="clock" size={20} color="#10b981" />
               <View style={styles.infoContent}>
                 <Text style={styles.infoLabel}>Date</Text>
-                <Text style={styles.infoValue}>{eventData.eventDate}</Text>
+                <Text style={styles.infoValue}>
+                  {eventData.date || '7/10/2023'}
+                </Text>
               </View>
             </View>
 
@@ -303,7 +323,9 @@ const ContactDetailsForm = () => {
               <Icon name="map-pin" size={20} color="#10b981" />
               <View style={styles.infoContent}>
                 <Text style={styles.infoLabel}>Location</Text>
-                <Text style={styles.infoValue}>{eventData.eventLocation}</Text>
+                <Text style={styles.infoValue}>
+                  {eventData.eventLocation || 'ggg'}
+                </Text>
               </View>
             </View>
 
@@ -311,16 +333,16 @@ const ContactDetailsForm = () => {
               <Icon name="target" size={20} color="#10b981" />
               <View style={styles.infoContent}>
                 <Text style={styles.infoLabel}>Purpose</Text>
-                <Text style={styles.infoValue}>{eventData.intent}</Text>
+                <Text style={styles.infoValue}>{eventData.intent || 'no'}</Text>
               </View>
             </View>
           </View>
 
           {/* Notes */}
-          {formData.notes && (
+          {yourData.note && (
             <View style={styles.infoSection}>
               <Text style={styles.sectionTitle}>Personal Notes</Text>
-              <Text style={styles.notesText}>{formData.notes}</Text>
+              <Text style={styles.notesText}>{yourData.note}</Text>
             </View>
           )}
 
@@ -343,8 +365,7 @@ const ContactDetailsForm = () => {
             <TouchableOpacity onPress={shareVCard} style={styles.shareButton}>
               <LinearGradient
                 colors={['#10b981', '#059669']}
-                style={styles.gradientButton}
-              >
+                style={styles.gradientButton}>
                 <Icon name="share-2" size={20} color="#fff" />
                 <Text style={styles.buttonText}>Share vCard</Text>
               </LinearGradient>
@@ -359,126 +380,154 @@ const ContactDetailsForm = () => {
   return (
     <View style={styles.container}>
       <StatusBar barStyle="light-content" backgroundColor="#6366f1" />
-      <LinearGradient
-        colors={['#6366f1', '#8b5cf6']}
-        style={styles.header}
-      >
+      <LinearGradient colors={['#6366f1', '#8b5cf6']} style={styles.header}>
         <Text style={styles.headerTitle}>vCard Creator</Text>
-        <Text style={styles.headerSubtitle}>Create professional contact cards</Text>
+        <Text style={styles.headerSubtitle}>
+          Create professional contact cards
+        </Text>
       </LinearGradient>
 
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
         <View style={styles.formSection}>
           <Text style={styles.sectionTitle}>Personal Information</Text>
-          
+
           <View style={styles.inputRow}>
-            <View style={[styles.inputContainer, { flex: 1, marginRight: 8 }]}>
-              <Icon name="user" size={18} color="#9ca3af" style={styles.inputIcon} />
+            <View style={[styles.inputContainer, {flex: 1, marginRight: 8}]}>
+              <Icon
+                name="user"
+                size={18}
+                color="#9ca3af"
+                style={styles.inputIcon}
+              />
               <TextInput
                 placeholder="First Name"
-                value={formData.firstName}
-                onChangeText={text => updateField('firstName', text)}
+                value={formData.firstName || formData.name.firstName}
                 style={styles.textInput}
                 placeholderTextColor="#9ca3af"
+                editable={false}
               />
             </View>
-            
-            <View style={[styles.inputContainer, { flex: 1, marginLeft: 8 }]}>
-              <Icon name="user" size={18} color="#9ca3af" style={styles.inputIcon} />
+
+            <View style={[styles.inputContainer, {flex: 1, marginLeft: 8}]}>
+              <Icon
+                name="user"
+                size={18}
+                color="#9ca3af"
+                style={styles.inputIcon}
+              />
               <TextInput
                 placeholder="Last Name"
-                value={formData.lastName}
-                onChangeText={text => updateField('lastName', text)}
+                value={formData.lastName || formData.name.lastName}
                 style={styles.textInput}
                 placeholderTextColor="#9ca3af"
+                editable={false}
               />
             </View>
           </View>
 
           <View style={styles.inputContainer}>
-            <Icon name="briefcase" size={18} color="#9ca3af" style={styles.inputIcon} />
+            <Icon
+              name="briefcase"
+              size={18}
+              color="#9ca3af"
+              style={styles.inputIcon}
+            />
             <TextInput
               placeholder="Organization"
               value={formData.organization}
-              onChangeText={text => updateField('organization', text)}
               style={styles.textInput}
               placeholderTextColor="#9ca3af"
+              editable={false}
             />
           </View>
 
           <View style={styles.inputContainer}>
-            <Icon name="award" size={18} color="#9ca3af" style={styles.inputIcon} />
+            <Icon
+              name="award"
+              size={18}
+              color="#9ca3af"
+              style={styles.inputIcon}
+            />
             <TextInput
               placeholder="Job Title / Designation"
               value={formData.designation}
-              onChangeText={text => updateField('designation', text)}
               style={styles.textInput}
               placeholderTextColor="#9ca3af"
+              editable={false}
             />
           </View>
         </View>
 
         <View style={styles.formSection}>
           <Text style={styles.sectionTitle}>Contact Details</Text>
-          
+
           <View style={styles.inputContainer}>
-            <Icon name="phone" size={18} color="#9ca3af" style={styles.inputIcon} />
+            <Icon
+              name="phone"
+              size={18}
+              color="#9ca3af"
+              style={styles.inputIcon}
+            />
             <TextInput
               placeholder="Phone Number"
               keyboardType="phone-pad"
               value={formData.phone}
-              onChangeText={text => updateField('phone', text)}
               style={styles.textInput}
               placeholderTextColor="#9ca3af"
+              editable={false}
             />
           </View>
 
           <View style={styles.inputContainer}>
-            <Icon name="mail" size={18} color="#9ca3af" style={styles.inputIcon} />
+            <Icon
+              name="mail"
+              size={18}
+              color="#9ca3af"
+              style={styles.inputIcon}
+            />
             <TextInput
               placeholder="Email Address"
               keyboardType="email-address"
               value={formData.email}
-              onChangeText={text => updateField('email', text)}
               style={styles.textInput}
               placeholderTextColor="#9ca3af"
               autoCapitalize="none"
+              editable={false}
             />
           </View>
 
           <View style={styles.inputContainer}>
-            <Icon name="globe" size={18} color="#9ca3af" style={styles.inputIcon} />
+            <Icon
+              name="globe"
+              size={18}
+              color="#9ca3af"
+              style={styles.inputIcon}
+            />
             <TextInput
-              placeholder="Website URL"
-              value={formData.website}
-              onChangeText={text => updateField('website', text)}
+              placeholder="Linkedln"
+              value={formData.linkedln || formData.url}
               style={styles.textInput}
               placeholderTextColor="#9ca3af"
               autoCapitalize="none"
-            />
-          </View>
-
-          <View style={styles.inputContainer}>
-            <Icon name="map-pin" size={18} color="#9ca3af" style={styles.inputIcon} />
-            <TextInput
-              placeholder="Address"
-              value={formData.address}
-              onChangeText={text => updateField('address', text)}
-              style={styles.textInput}
-              placeholderTextColor="#9ca3af"
+              editable={false}
             />
           </View>
         </View>
 
         <View style={styles.formSection}>
           <Text style={styles.sectionTitle}>Additional Information</Text>
-          
+
           <View style={styles.inputContainer}>
-            <Icon name="edit-3" size={18} color="#9ca3af" style={styles.inputIcon} />
+            <Icon
+              name="edit-3"
+              size={18}
+              color="#9ca3af"
+              style={styles.inputIcon}
+            />
             <TextInput
               placeholder="Personal Notes"
-              value={formData.notes}
-              onChangeText={text => updateField('notes', text)}
+              value={yourData.note}
+              onChangeText={text => updateField('note', text)}
               style={[styles.textInput, styles.multilineInput]}
               placeholderTextColor="#9ca3af"
               multiline
@@ -487,10 +536,15 @@ const ContactDetailsForm = () => {
           </View>
 
           <View style={styles.inputContainer}>
-            <Icon name="tag" size={18} color="#9ca3af" style={styles.inputIcon} />
+            <Icon
+              name="tag"
+              size={18}
+              color="#9ca3af"
+              style={styles.inputIcon}
+            />
             <TextInput
               placeholder="Tags (comma separated)"
-              value={formData.tags}
+              value={yourData.tags}
               onChangeText={text => updateField('tags', text)}
               style={styles.textInput}
               placeholderTextColor="#9ca3af"
@@ -503,8 +557,7 @@ const ContactDetailsForm = () => {
           <TouchableOpacity onPress={createVCard} style={styles.createButton}>
             <LinearGradient
               colors={['#6366f1', '#8b5cf6']}
-              style={styles.gradientButton}
-            >
+              style={styles.gradientButton}>
               <Icon name="credit-card" size={20} color="#fff" />
               <Text style={styles.buttonText}>Create vCard</Text>
             </LinearGradient>
@@ -580,7 +633,7 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     marginBottom: 15,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
+    shadowOffset: {width: 0, height: 2},
     shadowOpacity: 0.1,
     shadowRadius: 4,
     elevation: 3,
@@ -604,7 +657,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginTop: 20,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
+    shadowOffset: {width: 0, height: 4},
     shadowOpacity: 0.1,
     shadowRadius: 8,
     elevation: 5,
@@ -643,7 +696,7 @@ const styles = StyleSheet.create({
     padding: 20,
     marginTop: 20,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
+    shadowOffset: {width: 0, height: 2},
     shadowOpacity: 0.1,
     shadowRadius: 4,
     elevation: 3,

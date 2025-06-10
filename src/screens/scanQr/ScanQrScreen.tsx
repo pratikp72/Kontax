@@ -19,9 +19,45 @@ import {
   Commands,
   ReactNativeScannerView,
 } from '@pushpendersingh/react-native-scanner';
+import {useNavigation} from '@react-navigation/native';
+import useScanStore from '../../store/useScanStore';
+import {QrCode} from 'lucide-react';
+const parseVCard = (vcard: string) => {
+  const lines = vcard.split(/\r?\n/);
+  const json = {};
+
+  for (const line of lines) {
+    if (line.startsWith('N:')) {
+      const [, value] = line.split('N:');
+      const [last, first] = value.split(';');
+      json.name = {firstName: first, lastName: last};
+    } else if (line.startsWith('TEL')) {
+      const [, rest] = line.split(':');
+      const typeMatch = line.match(/TYPE=([^:;]+)/);
+      json.phone = {
+        type: typeMatch ? typeMatch[1].split(',') : [],
+        number: rest,
+      };
+    } else if (line.startsWith('EMAIL:')) {
+      json.email = line.split('EMAIL:')[1];
+    } else if (line.startsWith('ORG:')) {
+      json.organization = line.split('ORG:')[1];
+    } else if (line.startsWith('TITLE:')) {
+      json.title = line.split('TITLE:')[1];
+    } else if (line.startsWith('URL:')) {
+      let url = line.split('URL:')[1];
+      if (!url.startsWith('http')) url = 'http://' + url;
+      json.url = url;
+    }
+  }
+
+  return json;
+};
 
 export default function ScanQrScreen() {
   const scannerRef = useRef(null);
+  const navigation = useNavigation();
+  const {qrData, setQrData} = useScanStore();
   const [isCameraPermissionGranted, setIsCameraPermissionGranted] =
     useState(false);
   const [isActive, setIsActive] = useState(true);
@@ -31,10 +67,66 @@ export default function ScanQrScreen() {
     checkCameraPermission();
   }, []);
 
-  const handleBarcodeScanned = event => {
-    const {data, bounds, type} = event?.nativeEvent;
-    setScannedData({data, bounds, type});
-    console.log('Barcode / QR Code scanned:', data, bounds, type);
+  // const handleBarcodeScanned = event => {
+  //   const {data, bounds, type} = event?.nativeEvent;
+  //   setScannedData({data, bounds, type});
+  //   console.log('Barcode / QR Code scanned:', data, bounds, type);
+  //   navigation.navigate('ContactDetailsForm')
+  // };
+
+  const handleBarcodeScanned = async event => {
+    const {data} = event?.nativeEvent;
+    let parsedData = null;
+
+    if (data.startsWith('BEGIN:VCARD')) {
+      parsedData = parseVCard(data);
+    } else {
+      // First try JSON parsing
+      try {
+        parsedData = JSON.parse(data);
+      } catch (jsonError) {
+        // If not JSON, try to parse manually as query string
+        const queryStart = data.indexOf('?');
+        if (queryStart !== -1) {
+          const queryString = data.substring(queryStart + 1);
+          parsedData = parseQueryString(queryString);
+        } else {
+          console.warn(
+            'Invalid QR content: Not a valid JSON or URL with query params:',
+            data,
+          );
+          return;
+        }
+      }
+    }
+
+    console.log('Parsed QR Data:', parsedData);
+    await setQrData(parsedData);
+    navigation.navigate('ContactDetailsForm');
+
+    console.log('navigation success', qrData);
+  };
+
+  const parseQueryString = queryString => {
+    const params = {};
+    const pairs = queryString.split('&');
+
+    for (const pair of pairs) {
+      const [key, value] = pair.split('=');
+      if (key) {
+        params[decodeURIComponent(key)] = decodeURIComponent(value || '');
+      }
+    }
+
+    return {
+      firstName: params.firstName || '',
+      lastName: params.lastName || '',
+      phone: params.phone || '',
+      email: params.email || '',
+      organization: params.organization || '',
+      designation: params.designation || '',
+      linkedln: params.linkedln || '',
+    };
   };
 
   const enableFlashlight = () => {
@@ -69,13 +161,13 @@ export default function ScanQrScreen() {
     if (scannerRef?.current) {
       Commands.releaseCamera(scannerRef?.current);
     }
-  }
+  };
 
   const startScanning = () => {
     if (scannerRef?.current) {
       Commands.startCamera(scannerRef?.current);
     }
-  }
+  };
 
   const checkCameraPermission = async () => {
     request(
@@ -124,13 +216,6 @@ export default function ScanQrScreen() {
 
         <View style={styles.controls}>
           <Button
-            title="Stop Scanning"
-            onPress={() => {
-              stopScanning();
-              setIsActive(false);
-            }}
-          />
-          <Button
             title="Resume Scanning"
             onPress={() => {
               resumeScanning();
@@ -149,12 +234,7 @@ export default function ScanQrScreen() {
               enableFlashlight();
             }}
           />
-          <Button
-            title="Release Camera"
-            onPress={() => {
-              releaseCamera();
-            }}
-          />
+
           <Button
             title="Start Camera"
             onPress={() => {
@@ -214,7 +294,9 @@ const styles = StyleSheet.create({
     marginVertical: 4,
   },
   TextStyle: {
-    fontSize: 30,
+    fontSize: 25,
     color: 'red',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
 });

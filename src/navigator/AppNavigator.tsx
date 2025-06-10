@@ -22,7 +22,7 @@ export type RootStackParamList = {
 const Stack = createNativeStackNavigator<RootStackParamList>();
 const AppNavigator = () => {
   return (
-  <Stack.Navigator initialRouteName="PersonalData">
+  <Stack.Navigator initialRouteName="PersonalDetailsForm">
         <Stack.Screen
       
 
