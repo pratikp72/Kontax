@@ -27,12 +27,14 @@ interface EventData {
   title: string;
   date: string;
   intent: string;
+  location:string;
 }
 
 interface FormErrors {
   title?: string;
   date?: string;
   intent?: string;
+  location?:string
 }
 
 interface IntentOption {
@@ -109,7 +111,9 @@ const navigation=useNavigation()
     if (!eventData.intent.trim()) {
       newErrors.intent = 'Please select an intent';
     }
-
+ if (!eventData.location.trim()) {
+      newErrors.location = 'Location is required';
+    }
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -295,6 +299,30 @@ const handleInputChange = (field: keyof EventData, value: string) => {
             </TouchableOpacity>
             {errors.intent && (
               <Text style={styles.errorText}>{errors.intent}</Text>
+            )}
+          </View>
+
+          {/* Event Location */}
+          <View style={styles.inputContainer}>
+            <Text style={styles.inputLabel}>Event Location</Text>
+            <View style={[
+              styles.inputWrapper,
+              focusedField === 'location' && styles.inputWrapperFocused,
+              errors.location && styles.inputWrapperError,
+            ]}>
+              <Text style={styles.inputIcon}>📍</Text>
+              <TextInput
+                style={styles.input}
+                placeholder="Enter event location"
+                placeholderTextColor="#A0A0A0"
+                value={eventData.location}
+                onChangeText={(value) => handleInputChange('location', value)}
+                onFocus={() => setFocusedField('location')}
+                onBlur={() => setFocusedField('')}
+              />
+            </View>
+            {errors.location && (
+              <Text style={styles.errorText}>{errors.location}</Text>
             )}
           </View>
 

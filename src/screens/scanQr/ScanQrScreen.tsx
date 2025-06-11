@@ -22,15 +22,19 @@ import {
 import {useNavigation} from '@react-navigation/native';
 import useScanStore from '../../store/useScanStore';
 import {QrCode} from 'lucide-react';
+import { useEventStore } from '../../store/useEventStore';
+
+
+
 const parseVCard = (vcard: string) => {
   const lines = vcard.split(/\r?\n/);
-  const json = {};
+  const json: any = {};
 
   for (const line of lines) {
     if (line.startsWith('N:')) {
       const [, value] = line.split('N:');
       const [last, first] = value.split(';');
-      json.name = {firstName: first, lastName: last};
+      json.name = { firstName: first, lastName: last };
     } else if (line.startsWith('TEL')) {
       const [, rest] = line.split(':');
       const typeMatch = line.match(/TYPE=([^:;]+)/);
@@ -42,12 +46,21 @@ const parseVCard = (vcard: string) => {
       json.email = line.split('EMAIL:')[1];
     } else if (line.startsWith('ORG:')) {
       json.organization = line.split('ORG:')[1];
+    
     } else if (line.startsWith('TITLE:')) {
-      json.title = line.split('TITLE:')[1];
-    } else if (line.startsWith('URL:')) {
+      json.designation = line.split('TITLE:')[1];}
+      else if (line.startsWith('URL:')) {
       let url = line.split('URL:')[1];
       if (!url.startsWith('http')) url = 'http://' + url;
       json.url = url;
+    } else if (line.startsWith('X-EVENT-TITLE:')) {
+      json.title = line.split('X-EVENT-TITLE:')[1];
+    } else if (line.startsWith('X-EVENT-DATE:')) {
+      json.date = line.split('X-EVENT-DATE:')[1];
+    } else if (line.startsWith('X-EVENT-END:')) {
+      json.intent = line.split('X-EVENT-INTENT:')[1];
+    } else if (line.startsWith('X-EVENT-LOCATION:')) {
+      json.location = line.split('X-EVENT-LOCATION:')[1];
     }
   }
 
@@ -58,6 +71,7 @@ export default function ScanQrScreen() {
   const scannerRef = useRef(null);
   const navigation = useNavigation();
   const {qrData, setQrData} = useScanStore();
+ 
   const [isCameraPermissionGranted, setIsCameraPermissionGranted] =
     useState(false);
   const [isActive, setIsActive] = useState(true);
@@ -101,7 +115,7 @@ export default function ScanQrScreen() {
     }
 
     console.log('Parsed QR Data:', parsedData);
-    await setQrData(parsedData);
+    await setQrData(parsedData );
     navigation.navigate('ContactDetailsForm');
 
     console.log('navigation success', qrData);
@@ -126,6 +140,10 @@ export default function ScanQrScreen() {
       organization: params.organization || '',
       designation: params.designation || '',
       linkedln: params.linkedln || '',
+      title:params.title||'',
+      intent:params.intent||'',
+      date:params.date||'',
+      location:params.location||''
     };
   };
 
@@ -222,18 +240,7 @@ export default function ScanQrScreen() {
               setIsActive(true);
             }}
           />
-          <Button
-            title="Flash Off"
-            onPress={() => {
-              disableFlashlight();
-            }}
-          />
-          <Button
-            title="Flash On"
-            onPress={() => {
-              enableFlashlight();
-            }}
-          />
+        
 
           <Button
             title="Start Camera"
@@ -246,7 +253,7 @@ export default function ScanQrScreen() {
         {scannedData && (
           <View style={styles.result}>
             <Text style={styles.resultText}>
-              Scanned Data: {scannedData?.data}
+              Scanned Data: {scannedData?.data} 
             </Text>
             <Text style={styles.resultText}>Type: {scannedData?.type}</Text>
           </View>

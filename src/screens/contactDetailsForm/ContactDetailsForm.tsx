@@ -1,4 +1,4 @@
-import React, {useState} from 'react';
+import React, {useRef, useState} from 'react';
 import {
   View,
   Text,
@@ -10,6 +10,9 @@ import {
   StatusBar,
   Dimensions,
   Platform,
+  Modal,
+  Animated,
+  FlatList,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/Feather';
 import LinearGradient from 'react-native-linear-gradient';
@@ -19,7 +22,39 @@ import useScanStore from '../../store/useScanStore';
 import {useEventStore} from '../../store/useEventStore';
 
 const {width} = Dimensions.get('window');
+interface IntentOption {
+  id: string;
+  label: string;
+  icon: string;
+  description: string;
+}
 
+const intentOptions: IntentOption[] = [
+  {
+    id: 'networking',
+    label: 'Networking',
+    icon: '🤝',
+    description: 'Connect with like-minded people',
+  },
+  {
+    id: 'partnership',
+    label: 'Partnership',
+    icon: '🤝',
+    description: 'Explore business collaborations',
+  },
+  {
+    id: 'exploration',
+    label: 'Exploration',
+    icon: '🔍',
+    description: 'Discover new opportunities',
+  },
+  {
+    id: 'nothing_specific',
+    label: 'Nothing Specific',
+    icon: '🎯',
+    description: 'Just going with the flow',
+  },
+];
 const ContactDetailsForm = () => {
   const [currentScreen, setCurrentScreen] = useState('form');
 
@@ -48,8 +83,12 @@ const ContactDetailsForm = () => {
   };
   
   const {eventData} = useEventStore();
-
- 
+const [showIntentModal, setShowIntentModal] = useState<boolean>(false);
+  
+  const fadeAnim = useRef(new Animated.Value(0)).current;
+  const slideAnim = useRef(new Animated.Value(50)).current;
+  const modalScale = useRef(new Animated.Value(0.8)).current;
+ console.log("eventData",eventData)
   const isFormValid = () => {
     return (
       formData.firstName?.trim() ||
@@ -81,9 +120,11 @@ const ContactDetailsForm = () => {
     if (formData.designation) {
       card.addJobtitle(formData.designation);
     }
+const phoneNumber =
+  typeof formData.phone === 'string'
+    ? formData.phone.trim()
+    : formData.phone?.number?.trim() || '7687686886';
 
-    const phoneNumber =
-      formData.phone?.trim() || formData.phone?.number?.trim() || '7687686886';
     if (phoneNumber) {
       card.addPhoneNumber(phoneNumber, 'WORK');
     }
@@ -134,6 +175,38 @@ const ContactDetailsForm = () => {
     return card.getFormattedString();
   };
 
+const handleInputChange = (field: keyof typeof yourData, value: string) => {
+  setYourData(prev => ({
+    ...prev,
+    [field]: value,
+  }));
+};
+  const handleIntentSelect = (intent: IntentOption) => {
+    handleInputChange('intent', intent.label);
+    setShowIntentModal(false);
+  };
+
+  const openIntentModal = () => {
+    setShowIntentModal(true);
+    // Reset and animate the modal scale
+    modalScale.setValue(0.8);
+    Animated.spring(modalScale, {
+      toValue: 1,
+      tension: 100,
+      friction: 8,
+      useNativeDriver: true,
+    }).start();
+  };
+
+  const closeIntentModal = () => {
+    Animated.timing(modalScale, {
+      toValue: 0.8,
+      duration: 200,
+      useNativeDriver: true,
+    }).start(() => {
+      setShowIntentModal(false);
+    });
+  };
   const createVCard = () => {
     if (isFormValid()) {
       setCurrentScreen('vcard');
@@ -148,6 +221,21 @@ const ContactDetailsForm = () => {
   const clearForm = () => {
     clearQrData('');
   };
+  const renderIntentOption = ({ item }: { item: IntentOption }) => (
+    <TouchableOpacity
+      style={styles.intentOption}
+      onPress={() => handleIntentSelect(item)}
+      activeOpacity={0.7}
+    >
+      <View style={styles.intentOptionContent}>
+        <Text style={styles.intentIcon}>{item.icon}</Text>
+        <View style={styles.intentTextContainer}>
+          <Text style={styles.intentLabel}>{item.label}</Text>
+          <Text style={styles.intentDescription}>{item.description}</Text>
+        </View>
+      </View>
+    </TouchableOpacity>
+  );
 
   const shareVCard = async () => {
     try {
@@ -171,6 +259,7 @@ const ContactDetailsForm = () => {
   const [yourData, setYourData] = useState({
     note: '',
     tags: '',
+    intent:''
     // add other fields as needed
   });
 
@@ -212,13 +301,16 @@ const ContactDetailsForm = () => {
       allTags = allTags.concat(eventTags);
     }
 
-    if (eventData.intent) {
-      allTags.push(`intent:${eventData.intent}`);
-    }
+    // if (eventData.intent) {
+    //   allTags.push(`intent:${eventData.intent}`);
+    // }
 
     return allTags;
   };
-
+const getSelectedIntentIcon = () => {
+    const selectedIntent = intentOptions.find(option => option.label === yourData.intent);
+    return selectedIntent ? selectedIntent.icon : '🎯';
+  };
   if (currentScreen === 'vcard') {
     return (
       <View style={styles.container}>
@@ -274,15 +366,19 @@ const ContactDetailsForm = () => {
               </View>
             )}
 
-            {/* {formData.phone && (
-              <View style={styles.infoRow}>
-                <Icon name="phone" size={20} color="#6366f1" />
-                <View style={styles.infoContent}>
-                  <Text style={styles.infoLabel}>Phone</Text>
-                  <Text style={styles.infoValue}>{formData?.phone||"87787867656"}</Text>
-                </View>
+          {(typeof formData.phone === 'string' || (formData.phone.number )) && (
+            <View style={styles.infoRow}>
+              <Icon name="phone" size={20} color="#6366f1" />
+              <View style={styles.infoContent}>
+                <Text style={styles.infoLabel}>Phone</Text>
+                <Text style={styles.infoValue}>
+                  {typeof formData.phone === 'string'
+                    ? formData.phone
+                    : formData.phone?.number || "87787867656"}
+                </Text>
               </View>
-            )} */}
+            </View>
+          )}
 
             {formData.linkedln && formData.url && (
               <View style={styles.infoRow}>
@@ -305,7 +401,7 @@ const ContactDetailsForm = () => {
               <Icon name="calendar" size={20} color="#10b981" />
               <View style={styles.infoContent}>
                 <Text style={styles.infoLabel}>Event</Text>
-                <Text style={styles.infoValue}>{eventData.title || 'top'}</Text>
+                <Text style={styles.infoValue}>{eventData.title||formData.title || 'top'}</Text>
               </View>
             </View>
 
@@ -314,7 +410,7 @@ const ContactDetailsForm = () => {
               <View style={styles.infoContent}>
                 <Text style={styles.infoLabel}>Date</Text>
                 <Text style={styles.infoValue}>
-                  {eventData.date || '7/10/2023'}
+                  {eventData.date ||formData.date|| '7/10/2023'}
                 </Text>
               </View>
             </View>
@@ -324,7 +420,7 @@ const ContactDetailsForm = () => {
               <View style={styles.infoContent}>
                 <Text style={styles.infoLabel}>Location</Text>
                 <Text style={styles.infoValue}>
-                  {eventData.eventLocation || 'ggg'}
+                  {eventData.location ||formData.location|| 'ggg'}
                 </Text>
               </View>
             </View>
@@ -333,7 +429,7 @@ const ContactDetailsForm = () => {
               <Icon name="target" size={20} color="#10b981" />
               <View style={styles.infoContent}>
                 <Text style={styles.infoLabel}>Purpose</Text>
-                <Text style={styles.infoValue}>{eventData.intent || 'no'}</Text>
+                <Text style={styles.infoValue}>{eventData.intent||formData.intent || 'no'}</Text>
               </View>
             </View>
           </View>
@@ -343,6 +439,12 @@ const ContactDetailsForm = () => {
             <View style={styles.infoSection}>
               <Text style={styles.sectionTitle}>Personal Notes</Text>
               <Text style={styles.notesText}>{yourData.note}</Text>
+            </View>
+          )}
+ {yourData.intent && (
+            <View style={styles.infoSection}>
+              <Text style={styles.sectionTitle}>Your Intent</Text>
+              <Text style={styles.notesText}>{yourData.intent}</Text>
             </View>
           )}
 
@@ -471,7 +573,7 @@ const ContactDetailsForm = () => {
             <TextInput
               placeholder="Phone Number"
               keyboardType="phone-pad"
-              value={formData.phone}
+              value={typeof formData.phone === 'string' ? formData.phone : formData.phone?.number || ''}
               style={styles.textInput}
               placeholderTextColor="#9ca3af"
               editable={false}
@@ -550,6 +652,30 @@ const ContactDetailsForm = () => {
               placeholderTextColor="#9ca3af"
             />
           </View>
+
+
+             <View style={styles.inputContainer}>
+                   
+                      <TouchableOpacity
+                        style={[
+                          styles.inputWrapper,
+                          styles.dropdownWrapper,
+                         
+                        ]}
+                        onPress={openIntentModal}
+                        activeOpacity={0.8}
+                      >
+                        <Text style={styles.inputIcon}>{getSelectedIntentIcon()}</Text>
+                        <Text style={[
+                          styles.dropdownText,
+                          !eventData.intent && styles.placeholderText,
+                        ]}>
+                          { yourData.intent||'Select your intent'}
+                        </Text>
+                        <Text style={styles.dropdownArrow}>▼</Text>
+                      </TouchableOpacity>
+                     
+                    </View>
         </View>
 
         {/* Action Buttons */}
@@ -569,6 +695,53 @@ const ContactDetailsForm = () => {
           </TouchableOpacity>
         </View>
       </ScrollView>
+
+
+
+
+        <Modal
+              visible={showIntentModal}
+              transparent={true}
+              animationType="none"
+              onRequestClose={closeIntentModal}
+              statusBarTranslucent={true}
+            >
+              <TouchableOpacity 
+                style={styles.modalOverlay}
+                activeOpacity={1}
+                onPress={closeIntentModal}
+              >
+                <TouchableOpacity
+                  activeOpacity={1}
+                  onPress={(e) => e.stopPropagation()}
+                >
+                  <Animated.View
+                    style={[
+                      styles.modalContainer,
+                      { transform: [{ scale: modalScale }] },
+                    ]}
+                  >
+                    <View style={styles.modalHeader}>
+                      <Text style={styles.modalTitle}>Select Your Intent</Text>
+                      <TouchableOpacity
+                        style={styles.modalCloseButton}
+                        onPress={closeIntentModal}
+                      >
+                        <Text style={styles.modalCloseText}>✕</Text>
+                      </TouchableOpacity>
+                    </View>
+                    
+                    <FlatList
+                      data={intentOptions}
+                      renderItem={renderIntentOption}
+                      keyExtractor={(item) => item.id}
+                      showsVerticalScrollIndicator={false}
+                      contentContainerStyle={styles.modalContent}
+                    />
+                  </Animated.View>
+                </TouchableOpacity>
+              </TouchableOpacity>
+            </Modal>
     </View>
   );
 };
@@ -584,6 +757,57 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     borderBottomLeftRadius: 25,
     borderBottomRightRadius: 25,
+  },
+  inputLabel: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#2C3E50',
+    marginBottom: 8,
+  },
+  inputWrapper: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#F8F9FA',
+    borderRadius: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 4,
+    borderWidth: 2,
+    borderColor: '#E8E8E8',
+  },
+  inputWrapperFocused: {
+    borderColor: '#9B59B6',
+    backgroundColor: '#FFFFFF',
+  },
+  inputWrapperError: {
+    borderColor: '#E74C3C',
+  },
+
+  input: {
+    flex: 1,
+    height: 50,
+    fontSize: 16,
+    color: '#2C3E50',
+  },
+  dropdownWrapper: {
+    justifyContent: 'space-between',
+    paddingVertical: 16,
+  },
+  dropdownText: {
+    flex: 1,
+    fontSize: 16,
+    color: '#2C3E50',
+  },
+  placeholderText: {
+    color: '#A0A0A0',
+  },
+  dropdownArrow: {
+    fontSize: 12,
+    color: '#7F8C8D',
+  },
+  errorText: {
+    color: '#E74C3C',
+    fontSize: 14,
+    marginTop: 6,
   },
   headerTitle: {
     fontSize: 28,
@@ -780,6 +1004,81 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
     marginLeft: 8,
+  },
+   modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+  },
+  modalContainer: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 20,
+    width: width * 0.85,
+    maxHeight: '70%',
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 8,
+    },
+    shadowOpacity: 0.3,
+    shadowRadius: 16,
+    elevation: 16,
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 24,
+    paddingVertical: 20,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F1F2F6',
+  },
+  modalTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#2C3E50',
+  },
+  modalCloseButton: {
+    width: 30,
+    height: 30,
+    borderRadius: 15,
+    backgroundColor: '#F8F9FA',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  modalCloseText: {
+    fontSize: 16,
+    color: '#7F8C8D',
+  },
+  modalContent: {
+    paddingVertical: 16,
+  },
+  intentOption: {
+    paddingHorizontal: 24,
+    paddingVertical: 16,
+  },
+  intentOptionContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  intentIcon: {
+    fontSize: 24,
+    marginRight: 16,
+  },
+  intentTextContainer: {
+    flex: 1,
+  },
+  intentLabel: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#2C3E50',
+    marginBottom: 2,
+  },
+  intentDescription: {
+    fontSize: 14,
+    color: '#7F8C8D',
   },
 });
 
