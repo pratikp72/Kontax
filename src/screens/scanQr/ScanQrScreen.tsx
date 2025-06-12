@@ -23,6 +23,7 @@ import {useNavigation} from '@react-navigation/native';
 import useScanStore from '../../store/useScanStore';
 import {QrCode} from 'lucide-react';
 import { useEventStore } from '../../store/useEventStore';
+import { useScanDetails } from '../../services/useScanDetails';
 
 
 
@@ -57,7 +58,7 @@ const parseVCard = (vcard: string) => {
       json.title = line.split('X-EVENT-TITLE:')[1];
     } else if (line.startsWith('X-EVENT-DATE:')) {
       json.date = line.split('X-EVENT-DATE:')[1];
-    } else if (line.startsWith('X-EVENT-END:')) {
+    } else if (line.startsWith('X-EVENT-INTENT:')) {
       json.intent = line.split('X-EVENT-INTENT:')[1];
     } else if (line.startsWith('X-EVENT-LOCATION:')) {
       json.location = line.split('X-EVENT-LOCATION:')[1];
@@ -71,7 +72,7 @@ export default function ScanQrScreen() {
   const scannerRef = useRef(null);
   const navigation = useNavigation();
   const {qrData, setQrData} = useScanStore();
- 
+ const {addScanDetail}=useScanDetails()
   const [isCameraPermissionGranted, setIsCameraPermissionGranted] =
     useState(false);
   const [isActive, setIsActive] = useState(true);
@@ -116,11 +117,29 @@ export default function ScanQrScreen() {
 
     console.log('Parsed QR Data:', parsedData);
     await setQrData(parsedData );
+
+
+    addScanDetail({
+           firstName: parsedData.name.firstName,
+  lastName: parsedData.name.lastName,
+  email: parsedData.email,
+  phone: parsedData.phone,
+  organization: parsedData.organization,
+  designation: parsedData.designation,
+  linkedln: parsedData.linkedln,
+  title: parsedData.title,
+  location: parsedData.location,
+  intent: parsedData.intent,
+  date: parsedData.date,
+          })
     navigation.navigate('ContactDetailsForm');
 
     console.log('navigation success', qrData);
   };
 
+  useEffect(()=>{
+console.log("adding tabel.........")
+  },[addScanDetail])
   const parseQueryString = queryString => {
     const params = {};
     const pairs = queryString.split('&');

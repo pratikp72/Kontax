@@ -1,6 +1,12 @@
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { create } from 'zustand';
+import { persist } from 'zustand/middleware';
 
-const useScanStore = create((set) => ({
+const useScanStore = create(
+  
+  persist(
+  
+  (set) => ({
   qrData: {
  firstName: '',
     lastName: '',
@@ -36,6 +42,22 @@ const useScanStore = create((set) => ({
 
   },
     }),
-}));
+}),
+ {
+      name: 'qr-storage',
+   storage: {
+  getItem: async (key) => {
+    const item = await AsyncStorage.getItem(key);
+    return item ? JSON.parse(item) : null; 
+  },
+  setItem: async (key, value) => {
+    await AsyncStorage.setItem(key, JSON.stringify(value)); 
+  },
+  removeItem: async (key) => {
+    await AsyncStorage.removeItem(key);
+  },
+}
+    }
+));
 
 export default useScanStore;

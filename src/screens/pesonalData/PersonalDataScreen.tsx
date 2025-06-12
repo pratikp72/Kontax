@@ -207,9 +207,11 @@ const PersonalDataScreen: React.FC = () => {
             </Animated.View>
 
             <TouchableOpacity
+             onPress={() => navigation.navigate('VcardHistory')}
               style={styles.secondaryButton}
+
               activeOpacity={0.8}>
-              <Text style={styles.secondaryButtonText}>📅 View My Events</Text>
+              <Text style={styles.secondaryButtonText}>📅 View Vcards</Text>
             </TouchableOpacity>
 
             <TouchableOpacity
