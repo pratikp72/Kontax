@@ -41,6 +41,7 @@ interface EventDetails {
   title: string;
   date: string;
   intent: string;
+  location:string;
 }
 
 interface QRData {
@@ -55,6 +56,9 @@ const QrCodeScreen: React.FC = () => {
   const [showDetails, setShowDetails] = useState<boolean>(false);
   const [isProcessing, setIsProcessing] = useState<boolean>(false);
   const [isOnline, setIsOnline] = useState<boolean>(true); // Add online state
+
+const [manualMode, setManualMode] = useState<boolean>(true); // null = auto
+
   const [qrValue, setQrValue] = useState<string>(''); // Add QR value state
 
   const {eventData} = useEventStore();
@@ -63,10 +67,13 @@ const QrCodeScreen: React.FC = () => {
   const generateUrl = () => {
     const baseUrl = 'http://harshpatel958.github.io/kontax-landing/';
     const params = new URLSearchParams();
-
-    Object.keys(sampleUserData).forEach(key => {
-      if (sampleUserData[key]) {
-        params.append(key, sampleUserData[key]);
+  const combinedData = {
+    ...sampleUserData,
+    ...eventData
+  };
+    Object.keys(combinedData).forEach(key => {
+      if (combinedData[key]) {
+        params.append(key, combinedData[key]);
       }
     });
 
@@ -74,41 +81,80 @@ const QrCodeScreen: React.FC = () => {
     console.log('Generated URL:', finalUrl);
     return finalUrl;
   };
+const generateVCard = () => {
+  const {
+    firstName,
+    lastName,
+    email,
+    phone,
+    organization,
+    designation,
+    linkedln,
+  
+  } = sampleUserData;
 
-  const generateVCard = () => {
-    const {
-      firstName,
-      lastName,
-      email,
-      phone,
-      organization,
-      designation,
-      linkedln,
-    } = sampleUserData;
+  const {
+  title,
+    date,      // Format: YYYY-MM-DD or ISO
+   // Format: HH:MM or full ISO datetime
+   intent,
+    location,
+  }=eventData;
 
-    let vCard = `BEGIN:VCARD\nVERSION:3.0\n`;
-    vCard += `N:${lastName};${firstName};;;\n`;
+  let vCard = `BEGIN:VCARD\nVERSION:3.0\n`;
+  vCard += `N:${lastName};${firstName};;;\n`;
 
-    if (phone) vCard += `TEL;TYPE=work,VOICE:${phone}\n`;
-    if (email) vCard += `EMAIL:${email}\n`;
-    if (organization) vCard += `ORG:${organization}\n`;
-    if (designation) vCard += `TITLE:${designation}\n`;
-    if (linkedln) vCard += `URL:${linkedln}\n`;
+  if (phone) vCard += `TEL;TYPE=work,VOICE:${phone}\n`;
+  if (email) vCard += `EMAIL:${email}\n`;
+  if (organization) vCard += `ORG:${organization}\n`;
+  if (designation) vCard += `TITLE:${designation}\n`;
+  if (linkedln) vCard += `URL:${linkedln}\n`;
 
-    vCard += `END:VCARD`;
+  // Custom fields
+  if (title) vCard += `X-EVENT-TITLE:${title}\n`;
+  if (date) vCard += `X-EVENT-DATE:${date}\n`;
+  if (intent) vCard += `X-EVENT-INTENT:${intent}\n`;
+  if (location) vCard += `X-EVENT-LOCATION:${location}\n`;
 
-    console.log('Generated vCard:', vCard.trim());
-    return vCard.trim();
-  };
+  vCard += `END:VCARD`;
+
+  console.log('Generated vCard:', vCard.trim());
+  return vCard.trim();
+};
+
+  // const generateVCard = () => {
+  //   const {
+  //     firstName,
+  //     lastName,
+  //     email,
+  //     phone,
+  //     organization,
+  //     designation,
+  //     linkedln,
+
+  //   } = sampleUserData;
+
+  //   let vCard = `BEGIN:VCARD\nVERSION:3.0\n`;
+  //   vCard += `N:${lastName};${firstName};;;\n`;
+
+  //   if (phone) vCard += `TEL;TYPE=work,VOICE:${phone}\n`;
+  //   if (email) vCard += `EMAIL:${email}\n`;
+  //   if (organization) vCard += `ORG:${organization}\n`;
+  //   if (designation) vCard += `TITLE:${designation}\n`;
+  //   if (linkedln) vCard += `URL:${linkedln}\n`;
+
+  //   vCard += `END:VCARD`;
+
+  //   console.log('Generated vCard:', vCard.trim());
+  //   return vCard.trim();
+  // };
 
   // Function to get QR data based on online status
   const getQRValue = () => {
-    if (isOnline) {
-      return generateUrl();
-    } else {
-      return generateVCard();
-    }
+    const onlineMode = manualMode !== null ? manualMode : isOnline;
+  return onlineMode ? generateUrl() : generateVCard();
   };
+const isEffectiveOnline = manualMode !== null ? manualMode : isOnline;
 
   const getIntentStyle = (intent: string) => {
     switch (intent.toLowerCase()) {
@@ -181,17 +227,13 @@ const QrCodeScreen: React.FC = () => {
   }, []);
 
   // Update QR value when online status changes
-  useEffect(() => {
-    if (qrData) {
-      const newQrValue = getQRValue();
-      setQrValue(newQrValue);
-      console.log(
-        `QR updated - Online: ${isOnline}, Value type: ${
-          isOnline ? 'URL' : 'vCard'
-        }`,
-      );
-    }
-  }, [isOnline, qrData]);
+ useEffect(() => {
+  if (qrData) {
+    const newQrValue = getQRValue();
+    setQrValue(newQrValue);
+ 
+  }
+}, [isOnline, qrData, manualMode]);
 
   const startPulseAnimation = () => {
     Animated.loop(
@@ -254,7 +296,7 @@ const QrCodeScreen: React.FC = () => {
           const shareMessage = `🎉 Event: ${qrData.event.title}
 📅 Date: ${qrData.event.date}
 👤 By: ${qrData.user.firstName} ${qrData.user.lastName}
-📲 Scan QR to view ${isOnline ? 'online' : 'contact details'}`;
+📲 Scan QR to view ${isEffectiveOnline? 'online' : 'contact details'}`;
 
           const shareOptions = {
             title: `Event: ${qrData.event.title}`,
@@ -439,23 +481,33 @@ const QrCodeScreen: React.FC = () => {
           <Text style={styles.headerTitle}>Event QR Code</Text>
           <Text style={styles.headerSubtitle}>
             Share your event details instantly{' '}
-            {isOnline ? '(Online)' : '(Offline)'}
+           <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 10 }}>
+  <Text style={{ marginRight: 10, fontWeight: 'bold', color: '#2C3E50' }}>
+    Mode: {manualMode ? 'Online' : 'Offline'}
+  </Text>
+  <TouchableOpacity
+    style={{
+      backgroundColor: '#27AE60',
+      paddingHorizontal: 12,
+      paddingVertical: 6,
+      borderRadius: 20,
+    }}
+    onPress={() => {
+      if (manualMode ) setManualMode(false);
+      else  setManualMode(true);
+     
+    }}
+  >
+    <Text style={{ color: 'green', fontWeight: 'bold',borderWidth:1,padding:3,paddingHorizontal:4,borderColor:'yellow',borderRadius:20,backgroundColor:'yellow' }}>
+      Switch to: {manualMode ? 'Offline' :'Online'}
+    </Text>
+  </TouchableOpacity>
+</View>
+
           </Text>
 
-          {/* Network Status Indicator */}
-          <View style={styles.networkStatus}>
-            <View
-              style={[
-                styles.networkDot,
-                {backgroundColor: isOnline ? '#4CAF50' : '#FF5722'},
-              ]}
-            />
-            <Text style={styles.networkText}>
-              {isOnline
-                ? 'Online - Sharing web link'
-                : 'Offline - Sharing contact card'}
-            </Text>
-          </View>
+   
+           
         </Animated.View>
       </View>
 
@@ -505,12 +557,13 @@ const QrCodeScreen: React.FC = () => {
 
           <View style={styles.summaryItem}>
             <Text style={styles.summaryLabel}>Mode:</Text>
+         
             <Text
               style={[
                 styles.summaryValue,
                 {color: isOnline ? '#4CAF50' : '#FF5722'},
               ]}>
-              {isOnline ? 'Online (Web Link)' : 'Offline (vCard)'}
+               {manualMode ? 'Online' : 'Offline'}
             </Text>
           </View>
 
@@ -534,6 +587,12 @@ const QrCodeScreen: React.FC = () => {
               {qrData.event.intent}
             </Text>
           </View>
+
+           <View style={styles.summaryItem}>
+            <Text style={styles.summaryLabel}>Location:</Text>
+            <Text style={styles.summaryValue}>{qrData.event.location}</Text>
+          </View>
+
 
           <View style={styles.summaryItem}>
             <Text style={styles.summaryLabel}>Organizer:</Text>

@@ -9,9 +9,14 @@ const useScanStore = create((set) => ({
     organization: '',
     designation: '',
     linkedln: '',
-   
+    title: '',
+    location: '',
+    intent:"",
+    date:""
+
   },
   setQrData: (data) => set({ qrData: data }),
+   
 
   clearQrData: () =>
     set({
@@ -23,7 +28,13 @@ const useScanStore = create((set) => ({
     organization: '',
     designation: '',
     linkedln: '',
-      },
+   
+    title: '',
+    location: '',
+    intent:"",
+    date:""
+
+  },
     }),
 }));
 
