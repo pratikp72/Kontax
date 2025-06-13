@@ -48,10 +48,13 @@ export const openPrepopulatedDB = async () => {
   date TEXT,
   notes TEXT,
   yourIntent TEXT,
-  tags TEXT
+  tags TEXT,
+   audio BLOB
 );`
 
   );
+
+  
 
     console.log('Table scan_details created or already exists');
 

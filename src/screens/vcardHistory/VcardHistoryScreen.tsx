@@ -1,15 +1,16 @@
 
 import React from 'react';
-import { View, Text, FlatList, StyleSheet, TouchableOpacity, Linking } from 'react-native';
+import { View, Text, FlatList, StyleSheet, TouchableOpacity, Linking, Alert } from 'react-native';
 import { useScanDetails } from '../../services/useScanDetails';
-
+import Icon1 from 'react-native-vector-icons/MaterialIcons'; 
 import Icon from 'react-native-vector-icons/Ionicons';
 import { useNavigation } from '@react-navigation/native';
+import VoiceNotePlayer from '../../components/VouceNotePlayer';
 
 
 
 const EventHistoryScreen = () => {
-  const { vcardDetails } = useScanDetails();
+  const { vcardDetails,deleteVcardDetail } = useScanDetails();
   const navigation=useNavigation();
 
   const handleLinkPress = (url) => {
@@ -29,6 +30,27 @@ const EventHistoryScreen = () => {
       Linking.openURL(`tel:${phone}`);
     }
   };
+const handleDelete = (id) => {
+  Alert.alert(
+    'Delete Entry',
+    'Are you sure you want to delete this card?',
+    [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Delete',
+        style: 'destructive',
+        onPress: async () => {
+          try {
+            await deleteVcardDetail(id); 
+          } catch (error) {
+            console.error('Failed to delete vCard detail:', error);
+          }
+        },
+      },
+    ]
+  );
+};
+
 
   const formatDate = (dateString) => {
     try {
@@ -49,83 +71,17 @@ const EventHistoryScreen = () => {
     return `${firstName?.charAt(0) || ''}${lastName?.charAt(0) || ''}`.toUpperCase();
   };
 
-//   const renderItem = ({ item, index }) => (
-//     <View style={[styles.card, { marginTop: index === 0 ? 8 : 0 }]}>
-//       {/* Header with Avatar and Name */}
-//       <View style={styles.header}>
-//         <View style={styles.avatarContainer}>
-//           <Text style={styles.avatarText}>
-//             {getInitials(item.firstName, item.lastName)}
-//           </Text>
-//         </View>
-//         <View style={styles.nameContainer}>
-//           <Text style={styles.name}>
-//             {item.firstName} {item.lastName}
-//           </Text>
-//           <Text style={styles.designation}>
-//             {item.designation} {item.organization && `at ${item.organization}`}
-//           </Text>
-//         </View>
-//       </View>
 
-//       {/* Contact Information */}
-//       <View style={styles.contactSection}>
-//         {item.email && (
-//           <TouchableOpacity 
-//             style={styles.contactRow} 
-//             onPress={() => handleEmailPress(item.email)}
-//           >
-//             <Text style={styles.contactIcon}>📧</Text>
-//             <Text style={[styles.contactText, styles.linkText]}>{item.email}</Text>
-//           </TouchableOpacity>
-//         )}
-
-//         {item.phone && (
-//           <TouchableOpacity 
-//             style={styles.contactRow} 
-//             onPress={() => handlePhonePress(item.phone)}
-//           >
-//             <Text style={styles.contactIcon}>📞</Text>
-//             <Text style={[styles.contactText, styles.linkText]}>{item.phone}</Text>
-//           </TouchableOpacity>
-//         )}
-
-//         {item.linkedln && (
-//           <TouchableOpacity 
-//             style={styles.contactRow} 
-//             onPress={() => handleLinkPress(item.linkedln)}
-//           >
-//             <Text style={styles.contactIcon}>💼</Text>
-//             <Text style={[styles.contactText, styles.linkText]}>LinkedIn Profile</Text>
-//           </TouchableOpacity>
-//         )}
-
-//         {item.location && (
-//           <View style={styles.contactRow}>
-//             <Text style={styles.contactIcon}>📍</Text>
-//             <Text style={styles.contactText}>{item.location}</Text>
-//           </View>
-//         )}
-
-//         {item.intent && (
-//           <View style={styles.intentRow}>
-//             <Text style={styles.intentLabel}>Intent:</Text>
-//             <Text style={styles.intentText}>{item.intent}</Text>
-//           </View>
-//         )}
-//       </View>
-
-//       {/* Footer with Date */}
-//       <View style={styles.footer}>
-//         <Text style={styles.dateText}>
-//           Scanned on {formatDate(item.date)}
-//         </Text>
-//       </View>
-//     </View>
-//   );
 const renderItem = ({ item, index }) => (
   <View style={[styles.card, { marginTop: index === 0 ? 8 : 0 }]}>
     {/* Header with Avatar and Name */}
+
+     <TouchableOpacity
+      style={styles.deleteIcon}
+      onPress={() => handleDelete(item.id)}
+    >
+      <Icon1 name="delete" size={24} color="#ff4d4d" />
+    </TouchableOpacity>
     <View style={styles.header}>
       <View style={styles.avatarContainer}>
         <Text style={styles.avatarText}>
@@ -208,6 +164,15 @@ const renderItem = ({ item, index }) => (
           <Text style={styles.intentText}>{item.tags}</Text>
         </View>
       )}
+
+
+      {item.audio && (
+  <View style={styles.contactRow}>
+    <Text style={styles.intentLabel}>Voice Note</Text>
+    <VoiceNotePlayer audioPath={item.audio} />
+  </View>
+
+      )}
     </View>
 
     {/* Footer with Date */}
@@ -258,6 +223,15 @@ const styles = StyleSheet.create({
     paddingBottom: 32,
  
   },
+
+  deleteIcon: {
+  position: 'absolute',
+  top: 10,
+  right: 10,
+  zIndex: 10,
+  padding: 4,
+},
+
   card: {
     backgroundColor: '#ffffff',
     marginBottom: 16,

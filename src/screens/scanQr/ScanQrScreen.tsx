@@ -82,12 +82,7 @@ export default function ScanQrScreen() {
     checkCameraPermission();
   }, []);
 
-  // const handleBarcodeScanned = event => {
-  //   const {data, bounds, type} = event?.nativeEvent;
-  //   setScannedData({data, bounds, type});
-  //   console.log('Barcode / QR Code scanned:', data, bounds, type);
-  //   navigation.navigate('ContactDetailsForm')
-  // };
+ 
 
   const handleBarcodeScanned = async event => {
     const {data} = event?.nativeEvent;
@@ -117,7 +112,7 @@ export default function ScanQrScreen() {
 
     console.log('Parsed QR Data:', parsedData);
     await setQrData(parsedData );
-
+console.log('data dtaaaaaaaaaaaaa',parsedData)
 
     addScanDetail({
            firstName: parsedData.name.firstName,

@@ -39,6 +39,7 @@ export interface VcardDetail {
   yourIntent:string;
   tags:string;
 
+
   
 
 }
@@ -111,7 +112,8 @@ export const useScanDetails = () => {
       detail.eventDetails.date,
       detail.notes,
       detail.yourIntent,
-      detail.tags
+      detail.tags,
+      
     ]
   );
 await fetchAllVcardDetails(db);
@@ -169,6 +171,12 @@ await fetchAllVcardDetails(db);
     await fetchAllDetails(db);
   };
 
+  const deleteVcardDetail = async (id: number) => {
+    if (!db) return;
+    await db.executeSql(`DELETE FROM  Vcard_details WHERE id = ?`, [id]);
+    await fetchAllVcardDetails(db);
+  };
+
   return {
     scanDetails,
     addScanDetail,
@@ -176,6 +184,7 @@ await fetchAllVcardDetails(db);
     updateScanDetail,
     addVcardDetail,
     deleteScanDetail,
+    deleteVcardDetail,
     refreshScanDetails: () => db && fetchAllDetails(db),
   };
 };

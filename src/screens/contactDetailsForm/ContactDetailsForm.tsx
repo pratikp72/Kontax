@@ -21,6 +21,8 @@ import Share from 'react-native-share';
 import useScanStore from '../../store/useScanStore';
 import {useEventStore} from '../../store/useEventStore';
 import {useScanDetails} from '../../services/useScanDetails';
+import AudioRecorder from '../../components/AudioRecorder';
+import VoiceNotePlayer from '../../components/VouceNotePlayer';
 
 const {width} = Dimensions.get('window');
 
@@ -48,6 +50,8 @@ interface VcardDetail {
   notes: string;
   yourIntent: string;
   tags: string;
+  
+
 }
 
 const intentOptions: IntentOption[] = [
@@ -97,6 +101,7 @@ const ContactDetailsForm = () => {
     linkedln: string;
     notes?: string;
     tags?: string;
+   
   };
 
   const {qrData: formData, clearQrData} = useScanStore() as {
@@ -115,6 +120,7 @@ const ContactDetailsForm = () => {
     note: '',
     tags: '',
     intent: '',
+    voiceNote:''
   });
 
   console.log('eventData', eventData);
@@ -131,6 +137,7 @@ const ContactDetailsForm = () => {
 
   // Function to save vCard to database
   const saveVcardToDatabase = async () => {
+
     if (!isFormValid()) {
       Alert.alert(
         'Validation Error',
@@ -162,6 +169,7 @@ const ContactDetailsForm = () => {
         notes: yourData.note || '',
         yourIntent: yourData.intent || '',
         tags: yourData.tags || '',
+      
       };
 
       await addVcardDetail(vcardDetail);
@@ -308,6 +316,7 @@ const ContactDetailsForm = () => {
       note: '',
       tags: '',
       intent: '',
+      voiceNote:''
     });
   };
 
@@ -386,7 +395,13 @@ const ContactDetailsForm = () => {
 
     return allTags;
   };
-
+const synergyTags = [
+  { label: 'Potential Hire', value: 'Potential Hire', color: '#16a34a' },
+  { label: 'Explore Later', value: 'Explore Later', color: '#eab308' },
+  { label: 'Follow-up Required', value: 'Follow-up Required', color: '#dc2626' },
+];
+const [selectedTags, setSelectedTags] = useState([]);
+const [customTags, setCustomTags] = useState('');
   const getSelectedIntentIcon = () => {
     const selectedIntent = intentOptions.find(
       option => option.label === yourData.intent,
@@ -550,18 +565,13 @@ const ContactDetailsForm = () => {
               </View>
             </View>
           )}
-
-          {/* Action Buttons */}
-          <View style={styles.actionButtons}>
-            <TouchableOpacity onPress={shareVCard} style={styles.shareButton}>
-              <LinearGradient
-                colors={['#10b981', '#059669']}
-                style={styles.gradientButton}>
-                <Icon name="share-2" size={20} color="#fff" />
-                <Text style={styles.buttonText}>Share vCard</Text>
-              </LinearGradient>
-            </TouchableOpacity>
-          </View>
+{yourData.voiceNote && (
+  <View style={styles.infoSection}>
+    <Text style={styles.sectionTitle}>Voice Note</Text>
+    <VoiceNotePlayer audioPath={yourData.voiceNote} />
+  </View>
+)}
+     
         </ScrollView>
       </View>
     );
@@ -762,7 +772,13 @@ const ContactDetailsForm = () => {
               <Text style={styles.dropdownArrow}>▼</Text>
             </TouchableOpacity>
           </View>
+
+    
+
         </View>
+
+        <View>   <Text style={styles.sectionTitle}>Voice Note</Text>
+              <AudioRecorder onAudioRecorded={(path) => updateField('voiceNote', path)} /></View>
 
         {/* Action Buttons */}
         <View style={styles.actionButtons}>
@@ -840,6 +856,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#f8fafc',
+    bottom:12
   },
   header: {
     paddingTop: 50,
