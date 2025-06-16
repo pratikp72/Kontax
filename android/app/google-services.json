@@ -1,0 +1,39 @@
+{
+  "project_info": {
+    "project_number": "63797479991",
+    "project_id": "kontax-25282",
+    "storage_bucket": "kontax-25282.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:63797479991:android:3d398268ccd5ab85390db2",
+        "android_client_info": {
+          "package_name": "com.kontaxapplication"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "63797479991-tnihhn2q6dshoc1qhi3viroia0vt3o2n.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyC0867DaCDventGKDZJeJ2eEckyKHEEvxE"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "63797479991-tnihhn2q6dshoc1qhi3viroia0vt3o2n.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

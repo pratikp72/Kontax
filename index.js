@@ -12,7 +12,11 @@ import {
 
 import App from './App';
 import {name as appName} from './app.json';
+import BackgroundFetch from "react-native-background-fetch";
+import BackgroundFetchHeadlessTask from './src/services/BackgroundFetchHeadlessTask';
 
+
+BackgroundFetch.registerHeadlessTask(BackgroundFetchHeadlessTask);
 AppRegistry.registerComponent(appName, () => App);
 console.error=()=>null
 if (Text.defaultProps) {
