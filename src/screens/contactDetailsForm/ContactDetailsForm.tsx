@@ -20,13 +20,41 @@ import RNFS from 'react-native-fs';
 import Share from 'react-native-share';
 import useScanStore from '../../store/useScanStore';
 import {useEventStore} from '../../store/useEventStore';
+import {useScanDetails} from '../../services/useScanDetails';
+import AudioRecorder from '../../components/AudioRecorder';
+import VoiceNotePlayer from '../../components/VouceNotePlayer';
+import { TagModal } from '../../components/TagModel';
+import { getIntentStyle, synergyTags } from '../../constants/intentData';
 
 const {width} = Dimensions.get('window');
+
 interface IntentOption {
   id: string;
   label: string;
   icon: string;
   description: string;
+}
+
+interface VcardDetail {
+  firstName: string;
+  lastName: string;
+  email: string;
+  phone: string;
+  organization: string;
+  designation: string;
+  linkedln: string;
+  eventDetails: {
+    title: string;
+    location: string;
+    intent: string;
+    date: string;
+  };
+  notes: string;
+  yourIntent: string;
+  tags: string;
+  voiceNote?: string | null; // Optional field for voice note
+  
+
 }
 
 const intentOptions: IntentOption[] = [
@@ -55,13 +83,15 @@ const intentOptions: IntentOption[] = [
     description: 'Just going with the flow',
   },
 ];
+
 const ContactDetailsForm = () => {
   const [currentScreen, setCurrentScreen] = useState('form');
+  const {addVcardDetail} = useScanDetails();
+  const [isSaving, setIsSaving] = useState(false);
 
   type FormData = {
     firstName: string;
     lastName: string;
-
     name: {
       firstName: string;
       lastName: string;
@@ -69,26 +99,36 @@ const ContactDetailsForm = () => {
     organization: string;
     designation: string;
     phone: string;
-
     email: string;
     url: string;
     linkedln: string;
     notes?: string;
     tags?: string;
+    voiceNote?: string | null; // Optional field for voice note
+   
   };
 
   const {qrData: formData, clearQrData} = useScanStore() as {
     qrData: FormData;
     clearQrData: (value: string) => void;
   };
-  
+
   const {eventData} = useEventStore();
-const [showIntentModal, setShowIntentModal] = useState<boolean>(false);
-  
+  const [showIntentModal, setShowIntentModal] = useState<boolean>(false);
+
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const slideAnim = useRef(new Animated.Value(50)).current;
   const modalScale = useRef(new Animated.Value(0.8)).current;
- console.log("eventData",eventData)
+
+  const [yourData, setYourData] = useState({
+    note: '',
+    tags: '',
+    intent: '',
+    voiceNote:''
+  });
+
+  console.log('eventData', eventData);
+
   const isFormValid = () => {
     return (
       formData.firstName?.trim() ||
@@ -98,11 +138,87 @@ const [showIntentModal, setShowIntentModal] = useState<boolean>(false);
       formData.email?.trim()
     );
   };
+//  const getIntentStyle = (intent: string) => {
+//     switch (intent.toLowerCase()) {
+//       case 'business':
+//         return {backgroundColor: 'yellow'};
+//       case 'personal':
+//         return {backgroundColor: 'pink'};
+//       case 'networking':
+//         return {backgroundColor: 'green'};
+//       case 'partnership':
+//         return {backgroundColor: 'blue'};
+
+//       case 'exploration':
+//         return {backgroundColor: 'orange'};
+//       default:
+//         return {backgroundColor: 'purple'};
+//     }
+//   };
+  // Function to save vCard to database
+  const saveVcardToDatabase = async () => {
+
+    if (!isFormValid()) {
+      Alert.alert(
+        'Validation Error',
+        'Please ensure you have at least First Name, Last Name, or Email.',
+      );
+      return false;
+    }
+
+    setIsSaving(true);
+
+    try {
+      const vcardDetail: VcardDetail = {
+        firstName: formData.firstName || formData.name?.firstName || '',
+        lastName: formData.lastName || formData.name?.lastName || '',
+        email: formData.email || '',
+        phone:
+          typeof formData.phone === 'string'
+            ? formData.phone
+            : formData.phone?.number || '',
+        organization: formData.organization || '',
+        designation: formData.designation || '',
+        linkedln: formData.linkedln || formData.url || '',
+        eventDetails: {
+          title:    eventData.title || formData.title || 'top',
+          location: eventData.location || formData.location ||'Location',
+          intent: eventData.intent || formData.intent|| 'General',
+          date:  new Date().toISOString().split('T')[0],
+        },
+        notes: yourData.note || '',
+        yourIntent: yourData.intent || '',
+        tags: yourData.tags || '',
+        voiceNote: yourData.voiceNote || null, // Optional field for voice note
+      
+      };
+
+      await addVcardDetail(vcardDetail);
+      console.log('fvcardDetail', vcardDetail);
+
+      Alert.alert('Success', 'Contact details saved successfully!', [
+        {
+          text: 'OK',
+          onPress: () => {
+            // Optionally navigate to vCard view or stay on form
+            setCurrentScreen('vcard');
+          },
+        },
+      ]);
+
+      return true;
+    } catch (error) {
+      console.error('Error saving vCard:', error);
+      Alert.alert('Error', 'Failed to save contact details. Please try again.');
+      return false;
+    } finally {
+      setIsSaving(false);
+    }
+  };
 
   const generateVCard = () => {
     const card = new vCard();
 
-    // Determine best firstName and lastName (prioritize top-level fields first)
     const firstName =
       formData.firstName?.trim() || formData.name?.firstName?.trim() || '';
     const lastName =
@@ -120,10 +236,11 @@ const [showIntentModal, setShowIntentModal] = useState<boolean>(false);
     if (formData.designation) {
       card.addJobtitle(formData.designation);
     }
-const phoneNumber =
-  typeof formData.phone === 'string'
-    ? formData.phone.trim()
-    : formData.phone?.number?.trim() || '7687686886';
+
+    const phoneNumber =
+      typeof formData.phone === 'string'
+        ? formData.phone.trim()
+        : formData.phone?.number?.trim() || '7687686886';
 
     if (phoneNumber) {
       card.addPhoneNumber(phoneNumber, 'WORK');
@@ -139,7 +256,6 @@ const phoneNumber =
       card.addURL(formData.linkedln);
     }
 
-    // Add event information as a note
     const eventNote = `Event: ${eventData.title} | Date: ${
       eventData.date
     } | Location: ${'udaipur'}`;
@@ -148,7 +264,6 @@ const phoneNumber =
       : eventNote;
     card.addNote(fullNote);
 
-    // Add tags as categories
     const allTags = [];
     if (formData.tags) {
       const personalTags = formData.tags
@@ -175,12 +290,13 @@ const phoneNumber =
     return card.getFormattedString();
   };
 
-const handleInputChange = (field: keyof typeof yourData, value: string) => {
-  setYourData(prev => ({
-    ...prev,
-    [field]: value,
-  }));
-};
+  const handleInputChange = (field: keyof typeof yourData, value: string) => {
+    setYourData(prev => ({
+      ...prev,
+      [field]: value,
+    }));
+  };
+
   const handleIntentSelect = (intent: IntentOption) => {
     handleInputChange('intent', intent.label);
     setShowIntentModal(false);
@@ -188,7 +304,6 @@ const handleInputChange = (field: keyof typeof yourData, value: string) => {
 
   const openIntentModal = () => {
     setShowIntentModal(true);
-    // Reset and animate the modal scale
     modalScale.setValue(0.8);
     Animated.spring(modalScale, {
       toValue: 1,
@@ -207,26 +322,30 @@ const handleInputChange = (field: keyof typeof yourData, value: string) => {
       setShowIntentModal(false);
     });
   };
-  const createVCard = () => {
-    if (isFormValid()) {
-      setCurrentScreen('vcard');
-    } else {
-      Alert.alert(
-        'Validation Error',
-        'Please enter at least First Name, Last Name, or Email.',
-      );
+
+ 
+  const createVCard = async () => {
+    const saved = await saveVcardToDatabase();
+    if (saved) {
+      // Data is already saved, vCard view will be shown via the success alert callback
     }
   };
 
   const clearForm = () => {
     clearQrData('');
+    setYourData({
+      note: '',
+      tags: '',
+      intent: '',
+      voiceNote:''
+    });
   };
-  const renderIntentOption = ({ item }: { item: IntentOption }) => (
+
+  const renderIntentOption = ({item}: {item: IntentOption}) => (
     <TouchableOpacity
       style={styles.intentOption}
       onPress={() => handleIntentSelect(item)}
-      activeOpacity={0.7}
-    >
+      activeOpacity={0.7}>
       <View style={styles.intentOptionContent}>
         <Text style={styles.intentIcon}>{item.icon}</Text>
         <View style={styles.intentTextContainer}>
@@ -236,7 +355,15 @@ const handleInputChange = (field: keyof typeof yourData, value: string) => {
       </View>
     </TouchableOpacity>
   );
+const [isTagsModalVisible, setTagsModalVisible] = useState(false);
 
+const openTagsModal = () => setTagsModalVisible(true);
+const closeTagsModal = () => setTagsModalVisible(false);
+
+const handleSaveTags = (tagsArray) => {
+  updateField("tags", tagsArray); // Assuming `tags` is stored as an array
+  setTagsModalVisible(false);
+};
   const shareVCard = async () => {
     try {
       const vCardString = generateVCard();
@@ -253,22 +380,16 @@ const handleInputChange = (field: keyof typeof yourData, value: string) => {
       });
     } catch (error) {
       console.log('Error sharing vCard:', error);
-      // Alert.alert('Error', 'Failed to share contact card');
     }
   };
-  const [yourData, setYourData] = useState({
-    note: '',
-    tags: '',
-    intent:''
-    // add other fields as needed
-  });
 
-  const updateField = (field, value) => {
+  const updateField = (field: string, value: string) => {
     setYourData(prev => ({
       ...prev,
       [field]: value,
     }));
   };
+
   const getProfileInitials = () => {
     const firstInitial =
       formData.firstName?.charAt(0)?.toUpperCase() ||
@@ -281,36 +402,23 @@ const handleInputChange = (field: keyof typeof yourData, value: string) => {
 
     return `${firstInitial}${lastInitial}` || 'UC';
   };
+const getTagsPreview = () => {
+  if (!yourData.tags) return [];
+  if (Array.isArray(yourData.tags)) return yourData.tags;
+  return yourData.tags.split(',').map(tag => tag.trim()).filter(tag => tag);
+};
 
-  const getTagsPreview = () => {
-    let allTags = [];
 
-    if (yourData.tags) {
-      const personalTags = yourData.tags
-        .split(',')
-        .map(tag => tag?.trim())
-        .filter(tag => tag.length > 0);
-      allTags = allTags.concat(personalTags);
-    }
 
-    if (eventData.eventTag) {
-      const eventTags = eventData.eventTag
-        .split(',')
-        .map(tag => tag?.trim())
-        .filter(tag => tag.length > 0);
-      allTags = allTags.concat(eventTags);
-    }
 
-    // if (eventData.intent) {
-    //   allTags.push(`intent:${eventData.intent}`);
-    // }
-
-    return allTags;
-  };
-const getSelectedIntentIcon = () => {
-    const selectedIntent = intentOptions.find(option => option.label === yourData.intent);
+  const getSelectedIntentIcon = () => {
+    const selectedIntent = intentOptions.find(
+      option => option.label === yourData.intent,
+    );
     return selectedIntent ? selectedIntent.icon : '🎯';
   };
+
+
   if (currentScreen === 'vcard') {
     return (
       <View style={styles.container}>
@@ -366,19 +474,19 @@ const getSelectedIntentIcon = () => {
               </View>
             )}
 
-          {(typeof formData.phone === 'string' || (formData.phone.number )) && (
-            <View style={styles.infoRow}>
-              <Icon name="phone" size={20} color="#6366f1" />
-              <View style={styles.infoContent}>
-                <Text style={styles.infoLabel}>Phone</Text>
-                <Text style={styles.infoValue}>
-                  {typeof formData.phone === 'string'
-                    ? formData.phone
-                    : formData.phone?.number || "87787867656"}
-                </Text>
+            {(typeof formData.phone === 'string' || formData.phone.number) && (
+              <View style={styles.infoRow}>
+                <Icon name="phone" size={20} color="#6366f1" />
+                <View style={styles.infoContent}>
+                  <Text style={styles.infoLabel}>Phone</Text>
+                  <Text style={styles.infoValue}>
+                    {typeof formData.phone === 'string'
+                      ? formData.phone
+                      : formData.phone?.number || '87787867656'}
+                  </Text>
+                </View>
               </View>
-            </View>
-          )}
+            )}
 
             {formData.linkedln && formData.url && (
               <View style={styles.infoRow}>
@@ -401,7 +509,11 @@ const getSelectedIntentIcon = () => {
               <Icon name="calendar" size={20} color="#10b981" />
               <View style={styles.infoContent}>
                 <Text style={styles.infoLabel}>Event</Text>
-                <Text style={styles.infoValue}>{eventData.title||formData.title || 'top'}</Text>
+                <Text style={styles.infoValue}>
+                  {eventData.title || formData.title || 'top'}
+                </Text>
+
+              
               </View>
             </View>
 
@@ -410,7 +522,7 @@ const getSelectedIntentIcon = () => {
               <View style={styles.infoContent}>
                 <Text style={styles.infoLabel}>Date</Text>
                 <Text style={styles.infoValue}>
-                  {eventData.date ||formData.date|| '7/10/2023'}
+                  {eventData.date || formData.date || '7/10/2023'}
                 </Text>
               </View>
             </View>
@@ -420,36 +532,51 @@ const getSelectedIntentIcon = () => {
               <View style={styles.infoContent}>
                 <Text style={styles.infoLabel}>Location</Text>
                 <Text style={styles.infoValue}>
-                  {eventData.location ||formData.location|| 'ggg'}
+                  {eventData.location || formData.location || 'ggg'}
                 </Text>
               </View>
             </View>
 
             <View style={styles.infoRow}>
               <Icon name="target" size={20} color="#10b981" />
-              <View style={styles.infoContent}>
+              <View style={[styles.infoContent,{flex:0}]}>
                 <Text style={styles.infoLabel}>Purpose</Text>
-                <Text style={styles.infoValue}>{eventData.intent||formData.intent || 'no'}</Text>
+                {/* <Text style={styles.infoValue}>
+                  {eventData.intent || formData.intent || 'no'}
+                </Text> */}
+
+                   <Text
+                              style={[
+                                styles.summaryValutIntent,
+                                getIntentStyle(eventData.intent || formData.intent || 'no'),
+                              ]}>
+                             {eventData.intent || formData.intent || 'no'}
+                            </Text>
               </View>
             </View>
           </View>
 
           {/* Notes */}
           {yourData.note && (
+          
             <View style={styles.infoSection}>
               <Text style={styles.sectionTitle}>Personal Notes</Text>
               <Text style={styles.notesText}>{yourData.note}</Text>
             </View>
           )}
- {yourData.intent && (
-            <View style={styles.infoSection}>
-              <Text style={styles.sectionTitle}>Your Intent</Text>
-              <Text style={styles.notesText}>{yourData.intent}</Text>
-            </View>
-          )}
 
+<View style={{}}>
+          {yourData.intent && (
+             
+            <View style={[styles.infoSection]}>
+              <Text style={styles.sectionTitle}>Your Intent</Text>
+              <Text style={[styles.notesText,styles.summaryValutIntent, getIntentStyle(yourData.intent ),  { alignSelf: "flex-start" }]}>{yourData.intent}</Text>
+            </View>
+       
+          )}
+</View>
           {/* Tags */}
-          {getTagsPreview().length > 0 && (
+          {/* {getTagsPreview().length > 0 && (
             <View style={styles.infoSection}>
               <Text style={styles.sectionTitle}>Tags</Text>
               <View style={styles.tagsContainer}>
@@ -460,19 +587,35 @@ const getSelectedIntentIcon = () => {
                 ))}
               </View>
             </View>
-          )}
+          )} */}
 
-          {/* Action Buttons */}
-          <View style={styles.actionButtons}>
-            <TouchableOpacity onPress={shareVCard} style={styles.shareButton}>
-              <LinearGradient
-                colors={['#10b981', '#059669']}
-                style={styles.gradientButton}>
-                <Icon name="share-2" size={20} color="#fff" />
-                <Text style={styles.buttonText}>Share vCard</Text>
-              </LinearGradient>
-            </TouchableOpacity>
+
+          {getTagsPreview().length > 0 && (
+  <View style={styles.infoSection}>
+    <Text style={styles.sectionTitle}>Tags</Text>
+    <View style={styles.tagsContainer}>
+      {getTagsPreview().map((tag, index) => {
+        // Find matching color from synergyTags
+        const tagConfig = synergyTags.find(item => item.value === tag);
+        const backgroundColor = tagConfig?.color || '#e0e7ff'; 
+
+        return (
+          <View key={index} style={[styles.tag, { backgroundColor }]}>
+            <Text style={styles.tagText}>{tag}</Text>
           </View>
+        );
+      })}
+    </View>
+  </View>
+)}
+
+{yourData.voiceNote && (
+  <View style={styles.infoSection}>
+    <Text style={styles.sectionTitle}>Voice Note</Text>
+    <VoiceNotePlayer audioPath={yourData.voiceNote} />
+  </View>
+)}
+     
         </ScrollView>
       </View>
     );
@@ -573,7 +716,11 @@ const getSelectedIntentIcon = () => {
             <TextInput
               placeholder="Phone Number"
               keyboardType="phone-pad"
-              value={typeof formData.phone === 'string' ? formData.phone : formData.phone?.number || ''}
+              value={
+                typeof formData.phone === 'string'
+                  ? formData.phone
+                  : formData.phone?.number || ''
+              }
               style={styles.textInput}
               placeholderTextColor="#9ca3af"
               editable={false}
@@ -637,7 +784,7 @@ const getSelectedIntentIcon = () => {
             />
           </View>
 
-          <View style={styles.inputContainer}>
+          {/* <View style={styles.inputContainer}>
             <Icon
               name="tag"
               size={18}
@@ -651,41 +798,73 @@ const getSelectedIntentIcon = () => {
               style={styles.textInput}
               placeholderTextColor="#9ca3af"
             />
+          </View> */}
+
+
+<View style={styles.inputContainer}>
+  <TouchableOpacity
+    style={[styles.inputWrapper, styles.dropdownWrapper]}
+    onPress={openTagsModal}
+    activeOpacity={0.8}
+  >
+    <Text style={styles.inputIcon}>
+      <Icon name="tag" size={18} color="#9ca3af" />
+    </Text>
+    <Text
+      style={[
+        styles.dropdownText,
+        (!yourData.tags || yourData.tags.length === 0) && styles.placeholderText,
+      ]}
+    >
+      {yourData.tags?.length > 0 ? yourData.tags.join(", ") : "Select tags"}
+    </Text>
+    <Text style={styles.dropdownArrow}>▼</Text>
+  </TouchableOpacity>
+</View>
+
+          <View style={styles.inputContainer}>
+            <TouchableOpacity
+              style={[styles.inputWrapper, styles.dropdownWrapper]}
+              onPress={openIntentModal}
+              activeOpacity={0.8}>
+              <Text style={styles.inputIcon}>{getSelectedIntentIcon()}</Text>
+              <Text
+                style={[
+                  styles.dropdownText,
+                  !yourData.intent && styles.placeholderText,
+                ]}>
+                {yourData.intent || 'Select your intent'}
+              </Text>
+              <Text style={styles.dropdownArrow}>▼</Text>
+            </TouchableOpacity>
           </View>
 
+    
 
-             <View style={styles.inputContainer}>
-                   
-                      <TouchableOpacity
-                        style={[
-                          styles.inputWrapper,
-                          styles.dropdownWrapper,
-                         
-                        ]}
-                        onPress={openIntentModal}
-                        activeOpacity={0.8}
-                      >
-                        <Text style={styles.inputIcon}>{getSelectedIntentIcon()}</Text>
-                        <Text style={[
-                          styles.dropdownText,
-                          !eventData.intent && styles.placeholderText,
-                        ]}>
-                          { yourData.intent||'Select your intent'}
-                        </Text>
-                        <Text style={styles.dropdownArrow}>▼</Text>
-                      </TouchableOpacity>
-                     
-                    </View>
         </View>
+
+        <View>   <Text style={styles.sectionTitle}>Voice Note</Text>
+              <AudioRecorder onAudioRecorded={(path) => updateField('voiceNote', path)} /></View>
 
         {/* Action Buttons */}
         <View style={styles.actionButtons}>
-          <TouchableOpacity onPress={createVCard} style={styles.createButton}>
+          <TouchableOpacity
+            onPress={createVCard}
+            style={styles.createButton}
+            disabled={isSaving}>
             <LinearGradient
-              colors={['#6366f1', '#8b5cf6']}
+              colors={
+                isSaving ? ['#9ca3af', '#6b7280'] : ['#6366f1', '#8b5cf6']
+              }
               style={styles.gradientButton}>
-              <Icon name="credit-card" size={20} color="#fff" />
-              <Text style={styles.buttonText}>Create vCard</Text>
+              <Icon
+                name={isSaving ? 'loader' : 'credit-card'}
+                size={20}
+                color="#fff"
+              />
+              <Text style={styles.buttonText}>
+                {isSaving ? 'Saving...' : 'Save & Create vCard'}
+              </Text>
             </LinearGradient>
           </TouchableOpacity>
 
@@ -696,60 +875,62 @@ const getSelectedIntentIcon = () => {
         </View>
       </ScrollView>
 
-
-
-
-        <Modal
-              visible={showIntentModal}
-              transparent={true}
-              animationType="none"
-              onRequestClose={closeIntentModal}
-              statusBarTranslucent={true}
-            >
-              <TouchableOpacity 
-                style={styles.modalOverlay}
-                activeOpacity={1}
-                onPress={closeIntentModal}
-              >
+      <Modal
+        visible={showIntentModal}
+        transparent={true}
+        animationType="none"
+        onRequestClose={closeIntentModal}
+        statusBarTranslucent={true}>
+        <TouchableOpacity
+          style={styles.modalOverlay}
+          activeOpacity={1}
+          onPress={closeIntentModal}>
+          <TouchableOpacity
+            activeOpacity={1}
+            onPress={e => e.stopPropagation()}>
+            <Animated.View
+              style={[
+                styles.modalContainer,
+                {transform: [{scale: modalScale}]},
+              ]}>
+              <View style={styles.modalHeader}>
+                <Text style={styles.modalTitle}>Select Your Intent</Text>
                 <TouchableOpacity
-                  activeOpacity={1}
-                  onPress={(e) => e.stopPropagation()}
-                >
-                  <Animated.View
-                    style={[
-                      styles.modalContainer,
-                      { transform: [{ scale: modalScale }] },
-                    ]}
-                  >
-                    <View style={styles.modalHeader}>
-                      <Text style={styles.modalTitle}>Select Your Intent</Text>
-                      <TouchableOpacity
-                        style={styles.modalCloseButton}
-                        onPress={closeIntentModal}
-                      >
-                        <Text style={styles.modalCloseText}>✕</Text>
-                      </TouchableOpacity>
-                    </View>
-                    
-                    <FlatList
-                      data={intentOptions}
-                      renderItem={renderIntentOption}
-                      keyExtractor={(item) => item.id}
-                      showsVerticalScrollIndicator={false}
-                      contentContainerStyle={styles.modalContent}
-                    />
-                  </Animated.View>
+                  style={styles.modalCloseButton}
+                  onPress={closeIntentModal}>
+                  <Text style={styles.modalCloseText}>✕</Text>
                 </TouchableOpacity>
-              </TouchableOpacity>
-            </Modal>
+              </View>
+
+              <FlatList
+                data={intentOptions}
+                renderItem={renderIntentOption}
+                keyExtractor={item => item.id}
+                showsVerticalScrollIndicator={false}
+                contentContainerStyle={styles.modalContent}
+              />
+            </Animated.View>
+          </TouchableOpacity>
+        </TouchableOpacity>
+      </Modal>
+<TagModal
+  visible={isTagsModalVisible}
+  onClose={closeTagsModal}
+  onSave={handleSaveTags}
+  selectedTags={yourData.tags}
+/>
+
+      
     </View>
   );
 };
 
+// All your existing styles remain the same
 const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#f8fafc',
+    bottom:12
   },
   header: {
     paddingTop: 50,
@@ -774,6 +955,13 @@ const styles = StyleSheet.create({
     borderWidth: 2,
     borderColor: '#E8E8E8',
   },
+   summaryValutIntent: {
+    fontSize: 16,
+padding:4,
+borderRadius: 8,
+color: '#fff',
+    // backgroundColor: 'grey',
+  },
   inputWrapperFocused: {
     borderColor: '#9B59B6',
     backgroundColor: '#FFFFFF',
@@ -781,7 +969,6 @@ const styles = StyleSheet.create({
   inputWrapperError: {
     borderColor: '#E74C3C',
   },
-
   input: {
     flex: 1,
     height: 50,
@@ -870,6 +1057,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#1f2937',
   },
+
   multilineInput: {
     textAlignVertical: 'top',
     minHeight: 80,
@@ -946,6 +1134,7 @@ const styles = StyleSheet.create({
   },
   notesText: {
     fontSize: 16,
+    
     color: '#4b5563',
     lineHeight: 24,
   },
@@ -963,7 +1152,7 @@ const styles = StyleSheet.create({
   },
   tagText: {
     fontSize: 14,
-    color: '#6366f1',
+    color: 'grey',
     fontWeight: '500',
   },
   actionButtons: {
@@ -1005,7 +1194,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     marginLeft: 8,
   },
-   modalOverlay: {
+  modalOverlay: {
     flex: 1,
     backgroundColor: 'rgba(0, 0, 0, 0.5)',
     justifyContent: 'center',

@@ -7,6 +7,7 @@ import CreateEventScreen from '../screens/createEvent/CreateEventScreen';
 import QrCodeScreen from '../screens/qrCode/QrCodeScreen';
 import ContactDetailsForm from '../screens/contactDetailsForm/ContactDetailsForm';
 import ScanQrScreen from '../screens/scanQr/ScanQrScreen';
+import VcardHistoryScreen from '../screens/vcardHistory/VcardHistoryScreen';
 
 
 export type RootStackParamList = {
@@ -28,6 +29,15 @@ const AppNavigator = () => {
 
           name="PersonalDetailsForm"
           component={PersonalDetailsFormScreen}
+          options={{headerShown: false}}
+        />
+
+
+         <Stack.Screen
+      
+
+          name="VcardHistory"
+          component={VcardHistoryScreen}
           options={{headerShown: false}}
         />
   <Stack.Screen

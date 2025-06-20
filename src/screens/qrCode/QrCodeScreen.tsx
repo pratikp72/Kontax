@@ -23,6 +23,7 @@ import NetInfo from '@react-native-community/netinfo';
 import {useEventStore} from '../../store/useEventStore';
 import {usePersonalStore} from '../../store/userPersonalStore';
 import {useNavigation} from '@react-navigation/native';
+import { getIntentStyle } from '../../constants/intentData';
 
 const {width, height} = Dimensions.get('window');
 
@@ -156,18 +157,7 @@ const generateVCard = () => {
   };
 const isEffectiveOnline = manualMode !== null ? manualMode : isOnline;
 
-  const getIntentStyle = (intent: string) => {
-    switch (intent.toLowerCase()) {
-      case 'business':
-        return {color: 'yellow'};
-      case 'personal':
-        return {color: 'pink'};
-      case 'networking':
-        return {color: 'green'};
-      default:
-        return {color: 'blue'};
-    }
-  };
+
 
   // Create a proper ref for QR Code
   const qrRef = useRef<any>(null);
@@ -807,7 +797,9 @@ const styles = StyleSheet.create({
   },
   summaryValutIntent: {
     fontSize: 16,
-    flex: 1,
+padding:4,
+borderRadius: 8,
+    backgroundColor: 'grey',
   },
   detailsContainer: {
     backgroundColor: '#F1F2F6',
