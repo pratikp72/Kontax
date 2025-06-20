@@ -23,6 +23,8 @@ import {useEventStore} from '../../store/useEventStore';
 import {useScanDetails} from '../../services/useScanDetails';
 import AudioRecorder from '../../components/AudioRecorder';
 import VoiceNotePlayer from '../../components/VouceNotePlayer';
+import { TagModal } from '../../components/TagModel';
+import { getIntentStyle, synergyTags } from '../../constants/intentData';
 
 const {width} = Dimensions.get('window');
 
@@ -50,6 +52,7 @@ interface VcardDetail {
   notes: string;
   yourIntent: string;
   tags: string;
+  voiceNote?: string | null; // Optional field for voice note
   
 
 }
@@ -101,6 +104,7 @@ const ContactDetailsForm = () => {
     linkedln: string;
     notes?: string;
     tags?: string;
+    voiceNote?: string | null; // Optional field for voice note
    
   };
 
@@ -134,7 +138,23 @@ const ContactDetailsForm = () => {
       formData.email?.trim()
     );
   };
+//  const getIntentStyle = (intent: string) => {
+//     switch (intent.toLowerCase()) {
+//       case 'business':
+//         return {backgroundColor: 'yellow'};
+//       case 'personal':
+//         return {backgroundColor: 'pink'};
+//       case 'networking':
+//         return {backgroundColor: 'green'};
+//       case 'partnership':
+//         return {backgroundColor: 'blue'};
 
+//       case 'exploration':
+//         return {backgroundColor: 'orange'};
+//       default:
+//         return {backgroundColor: 'purple'};
+//     }
+//   };
   // Function to save vCard to database
   const saveVcardToDatabase = async () => {
 
@@ -169,6 +189,7 @@ const ContactDetailsForm = () => {
         notes: yourData.note || '',
         yourIntent: yourData.intent || '',
         tags: yourData.tags || '',
+        voiceNote: yourData.voiceNote || null, // Optional field for voice note
       
       };
 
@@ -302,7 +323,7 @@ const ContactDetailsForm = () => {
     });
   };
 
-  // Updated function to save to database first, then show vCard
+ 
   const createVCard = async () => {
     const saved = await saveVcardToDatabase();
     if (saved) {
@@ -334,7 +355,15 @@ const ContactDetailsForm = () => {
       </View>
     </TouchableOpacity>
   );
+const [isTagsModalVisible, setTagsModalVisible] = useState(false);
 
+const openTagsModal = () => setTagsModalVisible(true);
+const closeTagsModal = () => setTagsModalVisible(false);
+
+const handleSaveTags = (tagsArray) => {
+  updateField("tags", tagsArray); // Assuming `tags` is stored as an array
+  setTagsModalVisible(false);
+};
   const shareVCard = async () => {
     try {
       const vCardString = generateVCard();
@@ -373,35 +402,15 @@ const ContactDetailsForm = () => {
 
     return `${firstInitial}${lastInitial}` || 'UC';
   };
+const getTagsPreview = () => {
+  if (!yourData.tags) return [];
+  if (Array.isArray(yourData.tags)) return yourData.tags;
+  return yourData.tags.split(',').map(tag => tag.trim()).filter(tag => tag);
+};
 
-  const getTagsPreview = () => {
-    let allTags = [];
 
-    if (yourData.tags) {
-      const personalTags = yourData.tags
-        .split(',')
-        .map(tag => tag?.trim())
-        .filter(tag => tag.length > 0);
-      allTags = allTags.concat(personalTags);
-    }
 
-    if (eventData.eventTag) {
-      const eventTags = eventData.eventTag
-        .split(',')
-        .map(tag => tag?.trim())
-        .filter(tag => tag.length > 0);
-      allTags = allTags.concat(eventTags);
-    }
 
-    return allTags;
-  };
-const synergyTags = [
-  { label: 'Potential Hire', value: 'Potential Hire', color: '#16a34a' },
-  { label: 'Explore Later', value: 'Explore Later', color: '#eab308' },
-  { label: 'Follow-up Required', value: 'Follow-up Required', color: '#dc2626' },
-];
-const [selectedTags, setSelectedTags] = useState([]);
-const [customTags, setCustomTags] = useState('');
   const getSelectedIntentIcon = () => {
     const selectedIntent = intentOptions.find(
       option => option.label === yourData.intent,
@@ -409,7 +418,7 @@ const [customTags, setCustomTags] = useState('');
     return selectedIntent ? selectedIntent.icon : '🎯';
   };
 
-  // vCard Screen (unchanged, but now data is already saved to database)
+
   if (currentScreen === 'vcard') {
     return (
       <View style={styles.container}>
@@ -503,6 +512,8 @@ const [customTags, setCustomTags] = useState('');
                 <Text style={styles.infoValue}>
                   {eventData.title || formData.title || 'top'}
                 </Text>
+
+              
               </View>
             </View>
 
@@ -528,32 +539,44 @@ const [customTags, setCustomTags] = useState('');
 
             <View style={styles.infoRow}>
               <Icon name="target" size={20} color="#10b981" />
-              <View style={styles.infoContent}>
+              <View style={[styles.infoContent,{flex:0}]}>
                 <Text style={styles.infoLabel}>Purpose</Text>
-                <Text style={styles.infoValue}>
+                {/* <Text style={styles.infoValue}>
                   {eventData.intent || formData.intent || 'no'}
-                </Text>
+                </Text> */}
+
+                   <Text
+                              style={[
+                                styles.summaryValutIntent,
+                                getIntentStyle(eventData.intent || formData.intent || 'no'),
+                              ]}>
+                             {eventData.intent || formData.intent || 'no'}
+                            </Text>
               </View>
             </View>
           </View>
 
           {/* Notes */}
           {yourData.note && (
+          
             <View style={styles.infoSection}>
               <Text style={styles.sectionTitle}>Personal Notes</Text>
               <Text style={styles.notesText}>{yourData.note}</Text>
             </View>
           )}
 
+<View style={{}}>
           {yourData.intent && (
-            <View style={styles.infoSection}>
+             
+            <View style={[styles.infoSection]}>
               <Text style={styles.sectionTitle}>Your Intent</Text>
-              <Text style={styles.notesText}>{yourData.intent}</Text>
+              <Text style={[styles.notesText,styles.summaryValutIntent, getIntentStyle(yourData.intent ),  { alignSelf: "flex-start" }]}>{yourData.intent}</Text>
             </View>
+       
           )}
-
+</View>
           {/* Tags */}
-          {getTagsPreview().length > 0 && (
+          {/* {getTagsPreview().length > 0 && (
             <View style={styles.infoSection}>
               <Text style={styles.sectionTitle}>Tags</Text>
               <View style={styles.tagsContainer}>
@@ -564,7 +587,28 @@ const [customTags, setCustomTags] = useState('');
                 ))}
               </View>
             </View>
-          )}
+          )} */}
+
+
+          {getTagsPreview().length > 0 && (
+  <View style={styles.infoSection}>
+    <Text style={styles.sectionTitle}>Tags</Text>
+    <View style={styles.tagsContainer}>
+      {getTagsPreview().map((tag, index) => {
+        // Find matching color from synergyTags
+        const tagConfig = synergyTags.find(item => item.value === tag);
+        const backgroundColor = tagConfig?.color || '#e0e7ff'; 
+
+        return (
+          <View key={index} style={[styles.tag, { backgroundColor }]}>
+            <Text style={styles.tagText}>{tag}</Text>
+          </View>
+        );
+      })}
+    </View>
+  </View>
+)}
+
 {yourData.voiceNote && (
   <View style={styles.infoSection}>
     <Text style={styles.sectionTitle}>Voice Note</Text>
@@ -740,7 +784,7 @@ const [customTags, setCustomTags] = useState('');
             />
           </View>
 
-          <View style={styles.inputContainer}>
+          {/* <View style={styles.inputContainer}>
             <Icon
               name="tag"
               size={18}
@@ -754,7 +798,29 @@ const [customTags, setCustomTags] = useState('');
               style={styles.textInput}
               placeholderTextColor="#9ca3af"
             />
-          </View>
+          </View> */}
+
+
+<View style={styles.inputContainer}>
+  <TouchableOpacity
+    style={[styles.inputWrapper, styles.dropdownWrapper]}
+    onPress={openTagsModal}
+    activeOpacity={0.8}
+  >
+    <Text style={styles.inputIcon}>
+      <Icon name="tag" size={18} color="#9ca3af" />
+    </Text>
+    <Text
+      style={[
+        styles.dropdownText,
+        (!yourData.tags || yourData.tags.length === 0) && styles.placeholderText,
+      ]}
+    >
+      {yourData.tags?.length > 0 ? yourData.tags.join(", ") : "Select tags"}
+    </Text>
+    <Text style={styles.dropdownArrow}>▼</Text>
+  </TouchableOpacity>
+</View>
 
           <View style={styles.inputContainer}>
             <TouchableOpacity
@@ -847,6 +913,14 @@ const [customTags, setCustomTags] = useState('');
           </TouchableOpacity>
         </TouchableOpacity>
       </Modal>
+<TagModal
+  visible={isTagsModalVisible}
+  onClose={closeTagsModal}
+  onSave={handleSaveTags}
+  selectedTags={yourData.tags}
+/>
+
+      
     </View>
   );
 };
@@ -880,6 +954,13 @@ const styles = StyleSheet.create({
     paddingVertical: 4,
     borderWidth: 2,
     borderColor: '#E8E8E8',
+  },
+   summaryValutIntent: {
+    fontSize: 16,
+padding:4,
+borderRadius: 8,
+color: '#fff',
+    // backgroundColor: 'grey',
   },
   inputWrapperFocused: {
     borderColor: '#9B59B6',
@@ -1053,6 +1134,7 @@ const styles = StyleSheet.create({
   },
   notesText: {
     fontSize: 16,
+    
     color: '#4b5563',
     lineHeight: 24,
   },
@@ -1070,7 +1152,7 @@ const styles = StyleSheet.create({
   },
   tagText: {
     fontSize: 14,
-    color: '#6366f1',
+    color: 'grey',
     fontWeight: '500',
   },
   actionButtons: {

@@ -38,6 +38,7 @@ export interface VcardDetail {
   notes:string;
   yourIntent:string;
   tags:string;
+  voiceNote: string | null; // Optional field for voice note
 
 
   
@@ -96,8 +97,8 @@ export const useScanDetails = () => {
       firstName, lastName, email, phone,
       organization, designation, linkedln,
       title, location, intent, date,
-      notes, yourIntent, tags
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      notes, yourIntent, tags,voiceNote
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,?)`,
     [
       detail.firstName,
       detail.lastName,
@@ -113,6 +114,7 @@ export const useScanDetails = () => {
       detail.notes,
       detail.yourIntent,
       detail.tags,
+      detail.voiceNote|| null
       
     ]
   );

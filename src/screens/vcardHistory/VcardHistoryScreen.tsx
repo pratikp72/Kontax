@@ -11,6 +11,7 @@ import VoiceNotePlayer from '../../components/VouceNotePlayer';
 
 const EventHistoryScreen = () => {
   const { vcardDetails,deleteVcardDetail } = useScanDetails();
+  console.log('Vcard Details:', vcardDetails);
   const navigation=useNavigation();
 
   const handleLinkPress = (url) => {
@@ -166,10 +167,10 @@ const renderItem = ({ item, index }) => (
       )}
 
 
-      {item.audio && (
+      {item.voiceNote && (
   <View style={styles.contactRow}>
     <Text style={styles.intentLabel}>Voice Note</Text>
-    <VoiceNotePlayer audioPath={item.audio} />
+    <VoiceNotePlayer audioPath={item.voiceNote} />
   </View>
 
       )}
