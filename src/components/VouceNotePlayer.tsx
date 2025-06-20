@@ -1,11 +1,15 @@
 // VoiceNotePlayer.js
-import React, { useState } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import React, {useState} from 'react';
+import {View, Text, TouchableOpacity, StyleSheet} from 'react-native';
 import AudioRecorderPlayer from 'react-native-audio-recorder-player';
 
 const audioRecorderPlayer = new AudioRecorderPlayer();
 
-const VoiceNotePlayer = ({ audioPath }) => {
+interface VoiceNotePlayerProps {
+  audioPath: string;
+}
+
+const VoiceNotePlayer: React.FC<VoiceNotePlayerProps> = ({audioPath}) => {
   const [isPlaying, setIsPlaying] = useState(false);
 
   const togglePlayback = async () => {
@@ -15,7 +19,7 @@ const VoiceNotePlayer = ({ audioPath }) => {
     } else {
       await audioRecorderPlayer.startPlayer(audioPath);
       setIsPlaying(true);
-      audioRecorderPlayer.addPlayBackListener((e) => {
+      audioRecorderPlayer.addPlayBackListener(e => {
         if (e.current_position >= e.duration) {
           setIsPlaying(false);
           audioRecorderPlayer.stopPlayer();
@@ -34,7 +38,7 @@ const VoiceNotePlayer = ({ audioPath }) => {
 };
 
 const styles = StyleSheet.create({
-  container: { marginTop: 10 },
+  container: {marginTop: 10},
   playButton: {
     backgroundColor: '#4f46e5',
     paddingVertical: 8,

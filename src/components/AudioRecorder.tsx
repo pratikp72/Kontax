@@ -1,11 +1,15 @@
 // AudioRecorder.js
-import React, { useState, useRef } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import React, {useState} from 'react';
+import {View, Text, TouchableOpacity, StyleSheet} from 'react-native';
 import AudioRecorderPlayer from 'react-native-audio-recorder-player';
 
 const audioRecorderPlayer = new AudioRecorderPlayer();
 
-const AudioRecorder = ({ onAudioRecorded }) => {
+type AudioRecorderProps = {
+  onAudioRecorded?: (audioPath: string) => void;
+};
+
+const AudioRecorder: React.FC<AudioRecorderProps> = ({onAudioRecorded}) => {
   const [recording, setRecording] = useState(false);
   const [playing, setPlaying] = useState(false);
   const [audioPath, setAudioPath] = useState(null);
@@ -36,13 +40,19 @@ const AudioRecorder = ({ onAudioRecorded }) => {
 
   return (
     <View style={styles.container}>
-     
       <View style={styles.controls}>
-        <TouchableOpacity onPress={recording ? onStopRecord : onStartRecord} style={styles.button}>
+        <TouchableOpacity
+          onPress={recording ? onStopRecord : onStartRecord}
+          style={styles.button}>
           <Text style={styles.buttonText}>{recording ? 'Stop' : 'Record'}</Text>
         </TouchableOpacity>
-        <TouchableOpacity onPress={playing ? onStopPlay : onStartPlay} style={styles.button} disabled={!audioPath}>
-          <Text style={styles.buttonText}>{playing ? 'Stop Playing' : 'Play'}</Text>
+        <TouchableOpacity
+          onPress={playing ? onStopPlay : onStartPlay}
+          style={styles.button}
+          disabled={!audioPath}>
+          <Text style={styles.buttonText}>
+            {playing ? 'Stop Playing' : 'Play'}
+          </Text>
         </TouchableOpacity>
       </View>
     </View>
@@ -50,9 +60,9 @@ const AudioRecorder = ({ onAudioRecorded }) => {
 };
 
 const styles = StyleSheet.create({
-  container: {  },
-  label: { fontSize: 16, marginBottom: 5 },
-  controls: { flexDirection: 'row', gap: 10 },
+  container: {},
+  label: {fontSize: 16, marginBottom: 5},
+  controls: {flexDirection: 'row', gap: 10},
   button: {
     padding: 8,
     backgroundColor: '#1f2937',

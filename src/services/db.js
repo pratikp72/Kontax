@@ -7,11 +7,10 @@ export const openPrepopulatedDB = async () => {
     const db = await SQLite.openDatabase({
       name: 'scan.db',
       location: 'default',
-        // createFromLocation: 1,
-    
+      // createFromLocation: 1,
     });
 
-    console.log('DB opened successfully',db);
+    console.log('DB opened successfully', db);
 
     // Now create the table if it doesn't exist
     await db.executeSql(`
@@ -31,9 +30,8 @@ export const openPrepopulatedDB = async () => {
       );
     `);
 
-
     await db.executeSql(
-`CREATE TABLE IF NOT EXISTS Vcard_details (
+      `CREATE TABLE IF NOT EXISTS Vcard_details (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   firstName TEXT,
   lastName TEXT,
@@ -51,12 +49,8 @@ export const openPrepopulatedDB = async () => {
   tags TEXT,
   voiceNote TEXT
 
-);`
-
-  );
-
-
-
+);`,
+    );
 
     console.log('Table scan_details created or already exists');
 

@@ -1,10 +1,6 @@
-
-
-
-
-import { useEventStore } from '../../store/useEventStore';
-import { useNavigation } from '@react-navigation/native';
-import React, { useState, useRef, useEffect } from 'react';
+import {useEventStore} from '../../store/useEventStore';
+import {useNavigation} from '@react-navigation/native';
+import React, {useState, useRef, useEffect} from 'react';
 import {
   View,
   Text,
@@ -19,22 +15,22 @@ import {
   Modal,
   FlatList,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import {SafeAreaView} from 'react-native-safe-area-context';
 
-const { width } = Dimensions.get('window');
+const {width} = Dimensions.get('window');
 
 interface EventData {
   title: string;
   date: string;
   intent: string;
-  location:string;
+  location: string;
 }
 
 interface FormErrors {
   title?: string;
   date?: string;
   intent?: string;
-  location?:string
+  location?: string;
 }
 
 interface IntentOption {
@@ -72,12 +68,12 @@ const intentOptions: IntentOption[] = [
 ];
 
 const CreateEventScreen: React.FC = () => {
-const { eventData, setEventData } = useEventStore();
-const navigation=useNavigation()
+  const {eventData, setEventData} = useEventStore();
+  const navigation = useNavigation();
   const [errors, setErrors] = useState<FormErrors>({});
   const [focusedField, setFocusedField] = useState<string>('');
   const [showIntentModal, setShowIntentModal] = useState<boolean>(false);
-  
+
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const slideAnim = useRef(new Animated.Value(50)).current;
   const modalScale = useRef(new Animated.Value(0.8)).current;
@@ -111,20 +107,19 @@ const navigation=useNavigation()
     if (!eventData.intent.trim()) {
       newErrors.intent = 'Please select an intent';
     }
- if (!eventData.location.trim()) {
+    if (!eventData.location.trim()) {
       newErrors.location = 'Location is required';
     }
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
-const handleInputChange = (field: keyof EventData, value: string) => {
-  setEventData({ [field]: value }); // ✅ update just one field
+  const handleInputChange = (field: keyof EventData, value: string) => {
+    setEventData({[field]: value}); // ✅ update just one field
 
-  if (errors[field]) {
-    setErrors((prev) => ({ ...prev, [field]: undefined }));
-  }
-};
-
+    if (errors[field]) {
+      setErrors(prev => ({...prev, [field]: undefined}));
+    }
+  };
 
   const handleIntentSelect = (intent: IntentOption) => {
     handleInputChange('intent', intent.label);
@@ -157,24 +152,19 @@ const handleInputChange = (field: keyof EventData, value: string) => {
     if (validateForm()) {
       setEventData(eventData);
       console.log(eventData);
-      navigation.navigate('QRCode')
-   
-   
+      navigation.navigate('QRCode');
     } else {
-      Alert.alert(
-        'Validation Error',
-        'Please fill in all required fields.',
-        [{ text: 'OK' }]
-      );
+      Alert.alert('Validation Error', 'Please fill in all required fields.', [
+        {text: 'OK'},
+      ]);
     }
   };
 
-  const renderIntentOption = ({ item }: { item: IntentOption }) => (
+  const renderIntentOption = ({item}: {item: IntentOption}) => (
     <TouchableOpacity
       style={styles.intentOption}
       onPress={() => handleIntentSelect(item)}
-      activeOpacity={0.7}
-    >
+      activeOpacity={0.7}>
       <View style={styles.intentOptionContent}>
         <Text style={styles.intentIcon}>{item.icon}</Text>
         <View style={styles.intentTextContainer}>
@@ -186,14 +176,16 @@ const handleInputChange = (field: keyof EventData, value: string) => {
   );
 
   const getSelectedIntentIcon = () => {
-    const selectedIntent = intentOptions.find(option => option.label === eventData.intent);
+    const selectedIntent = intentOptions.find(
+      option => option.label === eventData.intent,
+    );
     return selectedIntent ? selectedIntent.icon : '🎯';
   };
 
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="light-content" backgroundColor="#9B59B6" />
-      
+
       {/* Header */}
       <View style={styles.header}>
         <Animated.View
@@ -201,15 +193,18 @@ const handleInputChange = (field: keyof EventData, value: string) => {
             styles.headerContent,
             {
               opacity: fadeAnim,
-              transform: [{ translateY: slideAnim }],
+              transform: [{translateY: slideAnim}],
             },
-          ]}
-        >
-          <TouchableOpacity style={styles.backButton}onPress={()=>navigation.goBack()}>
+          ]}>
+          <TouchableOpacity
+            style={styles.backButton}
+            onPress={() => navigation.goBack()}>
             <Text style={styles.backButtonText}>← Back</Text>
           </TouchableOpacity>
           <Text style={styles.headerTitle}>Create Event</Text>
-          <Text style={styles.headerSubtitle}>Plan your next amazing event</Text>
+          <Text style={styles.headerSubtitle}>
+            Plan your next amazing event
+          </Text>
         </Animated.View>
       </View>
 
@@ -219,30 +214,29 @@ const handleInputChange = (field: keyof EventData, value: string) => {
           styles.formCard,
           {
             opacity: fadeAnim,
-            transform: [{ translateY: slideAnim }],
+            transform: [{translateY: slideAnim}],
           },
-        ]}
-      >
+        ]}>
         <ScrollView
           showsVerticalScrollIndicator={false}
           contentContainerStyle={styles.scrollContent}
-          keyboardShouldPersistTaps="handled"
-        >
+          keyboardShouldPersistTaps="handled">
           {/* Event Title */}
           <View style={styles.inputContainer}>
             <Text style={styles.inputLabel}>Event Title</Text>
-            <View style={[
-              styles.inputWrapper,
-              focusedField === 'title' && styles.inputWrapperFocused,
-              errors.title && styles.inputWrapperError,
-            ]}>
+            <View
+              style={[
+                styles.inputWrapper,
+                focusedField === 'title' && styles.inputWrapperFocused,
+                errors.title && styles.inputWrapperError,
+              ]}>
               <Text style={styles.inputIcon}>🎉</Text>
               <TextInput
                 style={styles.input}
                 placeholder="Enter event title"
                 placeholderTextColor="#A0A0A0"
                 value={eventData.title}
-                onChangeText={(value) => handleInputChange('title', value)}
+                onChangeText={value => handleInputChange('title', value)}
                 onFocus={() => setFocusedField('title')}
                 onBlur={() => setFocusedField('')}
               />
@@ -255,25 +249,24 @@ const handleInputChange = (field: keyof EventData, value: string) => {
           {/* Event Date */}
           <View style={styles.inputContainer}>
             <Text style={styles.inputLabel}>Event Date</Text>
-            <View style={[
-              styles.inputWrapper,
-              focusedField === 'date' && styles.inputWrapperFocused,
-              errors.date && styles.inputWrapperError,
-            ]}>
+            <View
+              style={[
+                styles.inputWrapper,
+                focusedField === 'date' && styles.inputWrapperFocused,
+                errors.date && styles.inputWrapperError,
+              ]}>
               <Text style={styles.inputIcon}>📅</Text>
               <TextInput
                 style={styles.input}
                 placeholder="MM/DD/YYYY or DD/MM/YYYY"
                 placeholderTextColor="#A0A0A0"
                 value={eventData.date}
-                onChangeText={(value) => handleInputChange('date', value)}
+                onChangeText={value => handleInputChange('date', value)}
                 onFocus={() => setFocusedField('date')}
                 onBlur={() => setFocusedField('')}
               />
             </View>
-            {errors.date && (
-              <Text style={styles.errorText}>{errors.date}</Text>
-            )}
+            {errors.date && <Text style={styles.errorText}>{errors.date}</Text>}
           </View>
 
           {/* Event Intent Dropdown */}
@@ -286,13 +279,13 @@ const handleInputChange = (field: keyof EventData, value: string) => {
                 errors.intent && styles.inputWrapperError,
               ]}
               onPress={openIntentModal}
-              activeOpacity={0.8}
-            >
+              activeOpacity={0.8}>
               <Text style={styles.inputIcon}>{getSelectedIntentIcon()}</Text>
-              <Text style={[
-                styles.dropdownText,
-                !eventData.intent && styles.placeholderText,
-              ]}>
+              <Text
+                style={[
+                  styles.dropdownText,
+                  !eventData.intent && styles.placeholderText,
+                ]}>
                 {eventData.intent || 'Select event intent'}
               </Text>
               <Text style={styles.dropdownArrow}>▼</Text>
@@ -305,18 +298,19 @@ const handleInputChange = (field: keyof EventData, value: string) => {
           {/* Event Location */}
           <View style={styles.inputContainer}>
             <Text style={styles.inputLabel}>Event Location</Text>
-            <View style={[
-              styles.inputWrapper,
-              focusedField === 'location' && styles.inputWrapperFocused,
-              errors.location && styles.inputWrapperError,
-            ]}>
+            <View
+              style={[
+                styles.inputWrapper,
+                focusedField === 'location' && styles.inputWrapperFocused,
+                errors.location && styles.inputWrapperError,
+              ]}>
               <Text style={styles.inputIcon}>📍</Text>
               <TextInput
                 style={styles.input}
                 placeholder="Enter event location"
                 placeholderTextColor="#A0A0A0"
                 value={eventData.location}
-                onChangeText={(value) => handleInputChange('location', value)}
+                onChangeText={value => handleInputChange('location', value)}
                 onFocus={() => setFocusedField('location')}
                 onBlur={() => setFocusedField('')}
               />
@@ -330,8 +324,7 @@ const handleInputChange = (field: keyof EventData, value: string) => {
           <TouchableOpacity
             style={styles.createButton}
             onPress={handleCreateEvent}
-            activeOpacity={0.8}
-          >
+            activeOpacity={0.8}>
             <Text style={styles.createButtonText}>Create Event</Text>
           </TouchableOpacity>
         </ScrollView>
@@ -343,37 +336,32 @@ const handleInputChange = (field: keyof EventData, value: string) => {
         transparent={true}
         animationType="none"
         onRequestClose={closeIntentModal}
-        statusBarTranslucent={true}
-      >
-        <TouchableOpacity 
+        statusBarTranslucent={true}>
+        <TouchableOpacity
           style={styles.modalOverlay}
           activeOpacity={1}
-          onPress={closeIntentModal}
-        >
+          onPress={closeIntentModal}>
           <TouchableOpacity
             activeOpacity={1}
-            onPress={(e) => e.stopPropagation()}
-          >
+            onPress={e => e.stopPropagation()}>
             <Animated.View
               style={[
                 styles.modalContainer,
-                { transform: [{ scale: modalScale }] },
-              ]}
-            >
+                {transform: [{scale: modalScale}]},
+              ]}>
               <View style={styles.modalHeader}>
                 <Text style={styles.modalTitle}>Select Event Intent</Text>
                 <TouchableOpacity
                   style={styles.modalCloseButton}
-                  onPress={closeIntentModal}
-                >
+                  onPress={closeIntentModal}>
                   <Text style={styles.modalCloseText}>✕</Text>
                 </TouchableOpacity>
               </View>
-              
+
               <FlatList
                 data={intentOptions}
                 renderItem={renderIntentOption}
-                keyExtractor={(item) => item.id}
+                keyExtractor={item => item.id}
                 showsVerticalScrollIndicator={false}
                 contentContainerStyle={styles.modalContent}
               />

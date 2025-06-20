@@ -14,7 +14,7 @@ import App from './App';
 import {name as appName} from './app.json';
 
 AppRegistry.registerComponent(appName, () => App);
-console.error=()=>null
+console.error = () => null;
 if (Text.defaultProps) {
   Text.defaultProps.allowFontScaling = false;
 } else {

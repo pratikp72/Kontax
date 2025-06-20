@@ -21,11 +21,8 @@ import {
 } from '@pushpendersingh/react-native-scanner';
 import {useNavigation} from '@react-navigation/native';
 import useScanStore from '../../store/useScanStore';
-import {QrCode} from 'lucide-react';
-import { useEventStore } from '../../store/useEventStore';
-import { useScanDetails } from '../../services/useScanDetails';
 
-
+import {useScanDetails} from '../../services/useScanDetails';
 
 const parseVCard = (vcard: string) => {
   const lines = vcard.split(/\r?\n/);
@@ -35,7 +32,7 @@ const parseVCard = (vcard: string) => {
     if (line.startsWith('N:')) {
       const [, value] = line.split('N:');
       const [last, first] = value.split(';');
-      json.name = { firstName: first, lastName: last };
+      json.name = {firstName: first, lastName: last};
     } else if (line.startsWith('TEL')) {
       const [, rest] = line.split(':');
       const typeMatch = line.match(/TYPE=([^:;]+)/);
@@ -47,10 +44,9 @@ const parseVCard = (vcard: string) => {
       json.email = line.split('EMAIL:')[1];
     } else if (line.startsWith('ORG:')) {
       json.organization = line.split('ORG:')[1];
-    
     } else if (line.startsWith('TITLE:')) {
-      json.designation = line.split('TITLE:')[1];}
-      else if (line.startsWith('URL:')) {
+      json.designation = line.split('TITLE:')[1];
+    } else if (line.startsWith('URL:')) {
       let url = line.split('URL:')[1];
       if (!url.startsWith('http')) url = 'http://' + url;
       json.url = url;
@@ -72,20 +68,20 @@ export default function ScanQrScreen() {
   const scannerRef = useRef(null);
   const navigation = useNavigation();
   const {qrData, setQrData} = useScanStore();
- const {addScanDetail}=useScanDetails()
+  const {addScanDetail} = useScanDetails();
   const [isCameraPermissionGranted, setIsCameraPermissionGranted] =
     useState(false);
   const [isActive, setIsActive] = useState(true);
-  const [scannedData, setScannedData] = useState(null);
+  const [scannedData] = useState(null);
 
   useEffect(() => {
     checkCameraPermission();
   }, []);
 
- 
-
   const handleBarcodeScanned = async event => {
-    const {data} = event?.nativeEvent;
+    // const {data} = event?.nativeEvent;
+    const data = event?.nativeEvent?.data ?? null;
+
     let parsedData = null;
 
     if (data.startsWith('BEGIN:VCARD')) {
@@ -111,30 +107,30 @@ export default function ScanQrScreen() {
     }
 
     console.log('Parsed QR Data:', parsedData);
-    await setQrData(parsedData );
-console.log('data dtaaaaaaaaaaaaa',parsedData)
+    await setQrData(parsedData);
+    console.log('data dtaaaaaaaaaaaaa', parsedData);
 
     addScanDetail({
-           firstName: parsedData.name.firstName,
-  lastName: parsedData.name.lastName,
-  email: parsedData.email,
-  phone: parsedData.phone,
-  organization: parsedData.organization,
-  designation: parsedData.designation,
-  linkedln: parsedData.linkedln,
-  title: parsedData.title,
-  location: parsedData.location,
-  intent: parsedData.intent,
-  date: parsedData.date,
-          })
+      firstName: parsedData.name.firstName,
+      lastName: parsedData.name.lastName,
+      email: parsedData.email,
+      phone: parsedData.phone,
+      organization: parsedData.organization,
+      designation: parsedData.designation,
+      linkedln: parsedData.linkedln,
+      title: parsedData.title,
+      location: parsedData.location,
+      intent: parsedData.intent,
+      date: parsedData.date,
+    });
     navigation.navigate('ContactDetailsForm');
 
     console.log('navigation success', qrData);
   };
 
-  useEffect(()=>{
-console.log("adding tabel.........")
-  },[addScanDetail])
+  useEffect(() => {
+    console.log('adding tabel.........');
+  }, [addScanDetail]);
   const parseQueryString = queryString => {
     const params = {};
     const pairs = queryString.split('&');
@@ -154,44 +150,17 @@ console.log("adding tabel.........")
       organization: params.organization || '',
       designation: params.designation || '',
       linkedln: params.linkedln || '',
-      title:params.title||'',
-      intent:params.intent||'',
-      date:params.date||'',
-      location:params.location||''
+      title: params.title || '',
+      intent: params.intent || '',
+      date: params.date || '',
+      location: params.location || '',
     };
   };
 
-  const enableFlashlight = () => {
-    if (scannerRef?.current) {
-      Commands.enableFlashlight(scannerRef.current);
-    }
-  };
-
-  const disableFlashlight = () => {
-    if (scannerRef?.current) {
-      Commands.disableFlashlight(scannerRef.current);
-    }
-  };
-
-  // Pause the camera after barcode / QR code is scanned
-  const stopScanning = () => {
-    if (scannerRef?.current) {
-      Commands.stopScanning(scannerRef?.current);
-      console.log('Scanning paused');
-    }
-  };
-
-  // Resume the camera after barcode / QR code is scanned
   const resumeScanning = () => {
     if (scannerRef?.current) {
       Commands.resumeScanning(scannerRef?.current);
       console.log('Scanning resumed');
-    }
-  };
-
-  const releaseCamera = () => {
-    if (scannerRef?.current) {
-      Commands.releaseCamera(scannerRef?.current);
     }
   };
 
@@ -254,7 +223,6 @@ console.log("adding tabel.........")
               setIsActive(true);
             }}
           />
-        
 
           <Button
             title="Start Camera"
@@ -267,7 +235,7 @@ console.log("adding tabel.........")
         {scannedData && (
           <View style={styles.result}>
             <Text style={styles.resultText}>
-              Scanned Data: {scannedData?.data} 
+              Scanned Data: {scannedData?.data}
             </Text>
             <Text style={styles.resultText}>Type: {scannedData?.type}</Text>
           </View>
