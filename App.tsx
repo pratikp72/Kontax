@@ -1,21 +1,13 @@
-import React, { useEffect } from 'react';
+import React, {useEffect} from 'react';
 import RootNavigator from './src/navigator/RootNavigator';
-import { openPrepopulatedDB } from './src/services/db';
-
-
+import {openPrepopulatedDB} from './src/services/db';
 
 const App = () => {
   useEffect(() => {
-  openPrepopulatedDB();
-}, []);
+    openPrepopulatedDB();
+  }, []);
 
-
-
-  return (
-
-      <RootNavigator/>
-  
-  );
+  return <RootNavigator />;
 };
 
 export default App;

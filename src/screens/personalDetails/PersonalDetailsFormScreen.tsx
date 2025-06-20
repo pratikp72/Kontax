@@ -1,7 +1,7 @@
 import {useNavigation} from '@react-navigation/native';
 import {usePersonalStore} from '../../store/userPersonalStore';
 
-import React, {useState, useRef, useEffect} from 'react';
+import React, {useState, useRef} from 'react';
 import {
   View,
   Text,
@@ -10,7 +10,6 @@ import {
   StyleSheet,
   ScrollView,
   Animated,
-  Dimensions,
   KeyboardAvoidingView,
   Platform,
   Alert,
@@ -18,10 +17,6 @@ import {
 import {SafeAreaView} from 'react-native-safe-area-context';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import IconT from 'react-native-vector-icons/FontAwesome';
-import  { openPrepopulatedDB } from '../../services/db';
-
-
-const {width} = Dimensions.get('window');
 
 interface FormData {
   firstName: string;
@@ -73,7 +68,8 @@ const PersonalDetailsFormScreen: React.FC = () => {
   };
 
   const validatePhone = (phone: string): boolean => {
-    const phoneRegex = /^\+?[\d\s\-\(\)]{10,}$/;
+    const phoneRegex = /^\+?[\d\s-()]{10,}$/;
+
     return phoneRegex.test(phone);
   };
 
@@ -123,9 +119,6 @@ const PersonalDetailsFormScreen: React.FC = () => {
     }
   };
 
-
-
-  
   const handleSubmit = () => {
     if (validateForm()) {
       Alert.alert(

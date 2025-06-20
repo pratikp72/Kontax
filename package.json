@@ -5,8 +5,9 @@
   "scripts": {
     "android": "react-native run-android",
     "ios": "react-native run-ios",
-    "lint": "eslint .",
+    "linter": "eslint .",
     "start": "react-native start",
+    "prittier": "prettier --write .",
     "test": "jest"
   },
   "dependencies": {
@@ -40,6 +41,7 @@
     "@babel/core": "^7.25.2",
     "@babel/preset-env": "^7.25.3",
     "@babel/runtime": "^7.25.0",
+    "@eslint/js": "^9.29.0",
     "@react-native-community/cli": "18.0.0",
     "@react-native-community/cli-platform-android": "18.0.0",
     "@react-native-community/cli-platform-ios": "18.0.0",
@@ -52,11 +54,16 @@
     "@types/react-native": "^0.72.8",
     "@types/react-test-renderer": "^19.0.0",
     "babel-plugin-module-resolver": "^5.0.2",
-    "eslint": "^8.19.0",
+    "eslint": "^8.57.1",
+    "eslint-plugin-prettier": "^4.2.1",
+    "eslint-plugin-react": "^7.37.5",
+    "globals": "^16.2.0",
+    "husky": "^9.1.7",
     "jest": "^29.6.3",
     "prettier": "2.8.8",
     "react-test-renderer": "19.0.0",
-    "typescript": "^5.0.4"
+    "typescript": "^5.0.4",
+    "typescript-eslint": "^8.34.1"
   },
   "engines": {
     "node": ">=18"

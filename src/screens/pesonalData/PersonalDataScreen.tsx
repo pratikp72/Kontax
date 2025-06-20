@@ -7,7 +7,6 @@ import {
   StyleSheet,
   ScrollView,
   Animated,
-  Dimensions,
   Alert,
   StatusBar,
   TextInput,
@@ -16,8 +15,6 @@ import {SafeAreaView} from 'react-native-safe-area-context';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import {useNavigation} from '@react-navigation/native';
 import {usePersonalStore} from '../../store/userPersonalStore';
-
-const {width, height} = Dimensions.get('window');
 
 const PersonalDataScreen: React.FC = () => {
   const [isEditing, setIsEditing] = React.useState(false);
@@ -207,9 +204,8 @@ const PersonalDataScreen: React.FC = () => {
             </Animated.View>
 
             <TouchableOpacity
-             onPress={() => navigation.navigate('VcardHistory')}
+              onPress={() => navigation.navigate('VcardHistory')}
               style={styles.secondaryButton}
-
               activeOpacity={0.8}>
               <Text style={styles.secondaryButtonText}>📅 View Vcards</Text>
             </TouchableOpacity>
